@@ -67,6 +67,7 @@ Token parse_token(StringView *src) {
     }
     
     assert(0 && "Unreachable");
+    return (Token) { .kind =  TK_EOF };
 }
 
 void tokenize(Tokenizer *tokenizer) {

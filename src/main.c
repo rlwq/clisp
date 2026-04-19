@@ -3,6 +3,7 @@
 #include "parser.h"
 #include "lisp_ast.h"
 #include <assert.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -19,42 +20,88 @@ void print_expr(LispAST *expr) {
             print_expr(expr->as.cons.cdr);
             printf(">");
         break;
+        case LISP_BUILTIN:
+            assert(0 && "Not implemented.");
+        break;
+        case LISP_LAMBDA:
+            assert(0 && "Not implemented.");
+        break;
         default: assert(0 && "Unreachable"); break;
     }
 }
 
-
-LispAST *eval(LispAST *expr) {
+LispAST *eval(LispAST *expr, Env *env) {
     switch (expr->kind) {
         case LISP_NIL:
         case LISP_INTEGER:
         case LISP_STRING:
-        case LISP_SYMBOL:
             return expr;
         break;
+        case LISP_SYMBOL:
+            return env_get(env, expr->as.symbol);
+        break;
         case LISP_CONS: {
-            StringView func = expr->as.cons.car->as.symbol;
-            LispAST *arg1 = eval(expr->as.cons.cdr->as.cons.car);
-            LispAST *arg2 = eval(expr->as.cons.cdr->as.cons.cdr->as.cons.car);
+            LispAST *func = eval(expr->as.cons.car, env);
+            LispAST *args = expr->as.cons.cdr;
+           
+            // TODO: control here if args should or should not be evaluated
+            for (LispAST *curr_arg = args;
+                 curr_arg->kind != LISP_NIL;
+                 curr_arg = curr_arg->as.cons.cdr)
+                curr_arg->as.cons.car = eval(curr_arg->as.cons.car, env);
 
-            if (sv_eq(func, sv_mk("add"))) {
-                LispAST *result = malloc(sizeof(LispAST));
-                result->kind = LISP_INTEGER;
-                result->as.integer = arg1->as.integer + arg2->as.integer;
-                return result;
-            }
-            else {
-                assert(0 && "Unreachable");
+
+            switch (func->kind) {
+                case LISP_BUILTIN: {
+                    LispAST *result = func->as.builtin(args);
+                    return result;
+                } break;
+                case LISP_LAMBDA:
+                    assert(0 && "Not implemented.");
+                break;
+                default:
+                    assert(0 && "Uncallable object.");
+                break;
             }
         } break;
+        case LISP_BUILTIN:
+            assert(0 && "Not implemented.");
+        break;
+        case LISP_LAMBDA:
+            assert(0 && "Not implemented.");
+        break;
+ 
         default:
             assert(0 && "Unreachable");
         break;
-    } 
+    }
+
+    assert(0 && "Unreachable");
+    return NULL;
+}
+
+LispAST *lisp_add(LispAST *args) {
+    int result_value = 0;
+
+    for (; args->kind != LISP_NIL; args = args->as.cons.cdr)
+        result_value += args->as.cons.car->as.integer;
+
+    LispAST *result = malloc(sizeof(LispAST));
+    result->kind = LISP_INTEGER;
+    result->as.integer = result_value;
+    return result;
 }
 
 int main() {
     char buff[2048];
+
+    Env env = env_init();
+
+    LispAST *add_func = malloc(sizeof(LispAST));
+    add_func->kind = LISP_BUILTIN;
+    add_func->as.builtin = lisp_add;
+
+    env_define(&env, sv_mk("add"), add_func);
 
     while (true) {
         if (!fgets(buff, sizeof(buff), stdin)) break;
@@ -66,7 +113,7 @@ int main() {
         Parser p = parser_init(t.tokens);
 
         LispAST *result = parse_expr(&p);
-        LispAST *r2 = eval(result);
+        LispAST *r2 = eval(result, &env);
         print_expr(result);
         printf("\n");
         print_expr(r2);

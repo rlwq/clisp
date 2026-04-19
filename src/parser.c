@@ -95,4 +95,5 @@ LispAST *parse_expr(Parser *parser) {
     }
 
     assert(0 && "Unreachable");
+    return NULL;
 }
