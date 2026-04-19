@@ -1,15 +1,21 @@
 CC := gcc
-CFLAGS := -I./include -Wall -Wextra
-SRC := ./src/main.c ./src/tokenizer.c ./src/string_view.c
-HEADERS := ./include/string_view.h
+CFLAGS := -I./include -Wall -Wextra -Wswitch-enum -Wswitch-default
+SRC := $(wildcard ./src/*.c) 
+HEADERS := $(wildcard ./include/*.h)
 TARGET := ./build/clisp
+
+debug: $(SRC) $(HEADERS)
+	@mkdir -p ./build/
+	$(CC) $(CFLAGS) $(SRC) -g -fsanitize=address,undefined -fanalyzer -o $(TARGET)
 
 build: $(SRC) $(HEADERS)
 	@mkdir -p ./build/
-	$(CC) $(CFLAGS) $(SRC) -o $(TARGET)
+	$(CC) $(CFLAGS) $(SRC) -O3 -DNDEBUG -o $(TARGET)
 
 run: build
 	$(TARGET)
 
 clean:
-	rm -rf ./build
+	rm -rf ./build *.plist
+
+.PHONY: build debug run clean

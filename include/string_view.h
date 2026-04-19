@@ -12,6 +12,9 @@ typedef struct {
     size_t size;
 } StringView;
 
+#define SV_FMT "%.*s"
+#define SV_ARGS(sv_) (int) (sv_).size, sv_.data
+
 #define sv(s_, n_) ( (StringView) { .data = (s_), .size = (n_) } )
 #define sv_mk(s_) ( (StringView) { .data = (s_), .size = strlen(s_) } )
 #define sv_at(sv_, i_) ( (sv_).data[i_] )

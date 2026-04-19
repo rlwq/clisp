@@ -29,6 +29,15 @@ struct LispAST {
     } as;
 };
 
+int svtoi(StringView sv) {
+    int result = 0;
+    
+    for (size_t i = 0; i < sv.size; i++)
+        result = 10 * result + sv_at(sv, i) - '0';
+
+    return result;
+}
+
 LispAST *parse_expr(Token *tokens, size_t *curr, size_t size) {
     // S-expr
     assert(*curr < size);
@@ -62,50 +71,104 @@ LispAST *parse_expr(Token *tokens, size_t *curr, size_t size) {
     
     // Integer
     if (tokens[*curr].kind == TK_INTEGER) {
-        (*curr)++;
-
         LispAST *ast = malloc(sizeof(LispAST));
         ast->kind = LISP_INTEGER;
-        ast->as.integer = 6969;  // TODO: remove
+        ast->as.integer = svtoi(tokens[*curr].src);
         
+        (*curr)++;
         return ast;
     }
     
     // Symbol
     if (tokens[*curr].kind == TK_SYMBOL) {
-        (*curr)++;
-
         LispAST *ast = malloc(sizeof(LispAST));
         ast->kind = LISP_SYMBOL;
-        ast->as.symbol = sv_mk("SYMBOL");  // TODO: remove
+        ast->as.symbol = tokens[*curr].src;
         
+        (*curr)++;
         return ast;
     }
     
     // String
     if (tokens[*curr].kind == TK_STRING) {
-        (*curr)++;
-
         LispAST *ast = malloc(sizeof(LispAST));
         ast->kind = LISP_STRING;
-        ast->as.string = sv_mk("Hello, World!");  // TODO: remove
- 
+        ast->as.string = sv_shrink(tokens[*curr].src, 1);
+        
+        (*curr)++;
         return ast;
     }
 
     assert(0 && "Unreachable");
 }
 
+void print_expr(LispAST *expr) {
+    switch (expr->kind) {
+        case LISP_NIL: printf("NIL"); break;
+        case LISP_INTEGER: printf("%d", expr->as.integer); break;
+        case LISP_STRING: printf("\""SV_FMT"\"", SV_ARGS(expr->as.string)); break;
+        case LISP_SYMBOL: printf(SV_FMT, SV_ARGS(expr->as.symbol)); break;
+        case LISP_CONS:
+            printf("<");
+            print_expr(expr->as.cons.car);
+            printf("; ");
+            print_expr(expr->as.cons.cdr);
+            printf(">");
+        break;
+        default: assert(0 && "Unreachable"); break;
+    }
+}
+
+LispAST *eval(LispAST *expr) {
+    switch (expr->kind) {
+        case LISP_NIL:
+        case LISP_INTEGER:
+        case LISP_STRING:
+        case LISP_SYMBOL:
+            return expr;
+        break;
+        case LISP_CONS: {
+            StringView func = expr->as.cons.car->as.symbol;
+            LispAST *arg1 = eval(expr->as.cons.cdr->as.cons.car);
+            LispAST *arg2 = eval(expr->as.cons.cdr->as.cons.cdr->as.cons.car);
+
+            if (sv_eq(func, sv_mk("add"))) {
+                LispAST *result = malloc(sizeof(LispAST));
+                result->kind = LISP_INTEGER;
+                result->as.integer = arg1->as.integer + arg2->as.integer;
+                return result;
+            }
+            else {
+                assert(0 && "Unreachable");
+            }
+        } break;
+        default:
+            assert(0 && "Unreachable");
+        break;
+    } 
+}
+
 int main() {
-    StringView prog = sv_mk("(printf \"Hello, %s. You are %d years old.\" \"David\" (add 33 34))");
+    StringView prog = sv_mk("(add (add 5 4) 2)");
  
     printf("%.*s\n", (int) prog.size, prog.data);
 
+    Token tokens[256];
+    size_t tokens_count = 0;
+
     Token t = parse_token(&prog);
     while (t.kind != TK_EOF) {
-        printf(TOKEN_FMT"\n", TOKEN_ARGS(t));
+        tokens[tokens_count++] = t;
         t = parse_token(&prog);
     }
+    
+    size_t cursor = 0;
+    LispAST *result = parse_expr(tokens, &cursor, tokens_count);
+    LispAST *r2 = eval(result);
+    print_expr(result);
+    printf("\n");
+    print_expr(r2);
+    printf("\n");
     return 0;
 }
 

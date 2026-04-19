@@ -36,6 +36,7 @@ Token parse_token(StringView *src) {
 
     // STRING
     if (sv_head(*src) == '"') {
+        // TODO: check if the closing " exists.
         size_t length = 1;
         while (length < src->size && sv_at(*src, length) != '"')
             length++;
