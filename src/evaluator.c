@@ -134,12 +134,14 @@ LispAST *eval_lambda_call(LispAST *lambda, LispAST *args, Env *env) {
     Env *local_scope = env_alloc(env);
     
     for (size_t i = 0; args->kind != LISP_NIL; args = args->as.cons.cdr) {
-        env_define(env, da_at(lambda->as.lambda.args, i)->as.symbol,
-                        args->as.cons.car);
+        env_define(local_scope, da_at(lambda->as.lambda.args, i)->as.symbol,
+                   args->as.cons.car);
+        i++;
     }
 
     LispAST *result = eval_expr(lambda->as.lambda.expr, local_scope);
-    env_free(local_scope);
+
+    // TODO: should manage allocated scopes
 
     return result;
 }
@@ -214,11 +216,8 @@ LispAST *eval_expr(LispAST *expr, Env *env) {
         case LISP_INTEGER:
         case LISP_STRING:
         case LISP_BUILTIN:
-            return expr;
-        break;
-
         case LISP_LAMBDA:
-            NOT_IMPLEMENTED();
+            return expr;
         break;
 
         case LISP_SYMBOL:
