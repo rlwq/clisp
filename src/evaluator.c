@@ -15,6 +15,28 @@ LispAST *lisp_eval_list(LispAST *expr, Env *env) {
     return expr;
 }
 
+// ((lambda) a b c)
+LispAST *lisp_lamda_call(LispAST *expr, Env *env) {
+    assert(expr->kind == LISP_CONS);
+    assert(expr->as.cons.car->kind == LISP_LAMBDA);
+
+    Env *new_env = malloc(sizeof(Env));
+    env_init(new_env);
+
+    // TODO: iterate through lambda paramters and expr and define them in new_env
+    // TODO: eval lambda's sub expr in the new_env
+    // TODO: free new_env
+    NOT_IMPLEMENTED();
+}
+
+LispAST *lisp_eval_let_expr(LispAST *args, Env *env) {
+    assert(args->kind == LISP_CONS);
+    assert(args->as.cons.car->kind == LISP_SYMBOL);
+    //TODO: maybe should copy the value
+    env_define(env, args->as.cons.car->as.symbol, lisp_eval(args->as.cons.cdr->as.cons.car, env));
+    return args;
+}
+
 LispAST *lisp_eval_sexpr(LispAST *expr, Env *env) {
     assert(expr->kind == LISP_CONS);
 
@@ -23,10 +45,14 @@ LispAST *lisp_eval_sexpr(LispAST *expr, Env *env) {
  
     if (head->kind == LISP_SYMBOL) {
         // TODO: sv_eq to something else
-        if (sv_eq(head->as.symbol, sv_mk("if")))
+        if (sv_eq(head->as.symbol, sv_mk("if"))) {
             NOT_IMPLEMENTED();
-        else if (sv_eq(head->as.symbol, sv_mk("let")))
-            NOT_IMPLEMENTED();
+            return expr;
+        }
+        else if (sv_eq(head->as.symbol, sv_mk("let"))) {
+            lisp_eval_let_expr(args, env);
+            return expr;
+        }
     }
 
     LispAST *evaluated_head = lisp_eval(head, env);
@@ -51,19 +77,6 @@ LispAST *lisp_eval_sexpr(LispAST *expr, Env *env) {
     }
 
     UNREACHABLE();
-}
-
-// ((lambda) a b c)
-LispAST *lamda_call(LispAST *expr, Env *env) {
-    assert(expr->kind == LISP_CONS);
-    assert(expr->as.cons.car->kind == LISP_LAMBDA);
-
-    Env *new_env = malloc(sizeof(Env));
-    env_init(new_env);
-    
-    // TODO: iterate through lambda paramters and expr and define them in new_env
-    // TODO: eval lambda's sub expr in the new_env
-    // TODO: free new_env
 }
 
 // TODO: maybe should always return a new AST

@@ -77,7 +77,7 @@ LispAST *lisp_id(LispAST *args) {
 int main() {
     char buff[2048];
 
-    Env env = env_init();
+    Env env = env_init(NULL);
 
     LispAST *add_func = malloc(sizeof(LispAST));
     add_func->kind = LISP_BUILTIN;
