@@ -16,18 +16,17 @@ LispAST *lisp_eval_list(LispAST *expr, Env *env) {
 }
 
 // ((lambda) a b c)
-LispAST *lisp_lamda_call(LispAST *expr, Env *env) {
-    assert(expr->kind == LISP_CONS);
-    assert(expr->as.cons.car->kind == LISP_LAMBDA);
-
-    Env *new_env = malloc(sizeof(Env));
-    env_init(new_env);
-
-    // TODO: iterate through lambda paramters and expr and define them in new_env
-    // TODO: eval lambda's sub expr in the new_env
-    // TODO: free new_env
-    NOT_IMPLEMENTED();
-}
+// LispAST *lisp_lamda_call(LispAST *expr, Env *env) {
+//     assert(expr->kind == LISP_CONS);
+//     assert(expr->as.cons.car->kind == LISP_LAMBDA);
+//
+//     Env *new_env = env_alloc(env);
+//
+//     // TODO: iterate through lambda paramters and expr and define them in new_env
+//     // TODO: eval lambda's sub expr in the new_env
+//     // TODO: free new_env
+//     NOT_IMPLEMENTED();
+// }
 
 LispAST *lisp_eval_let_expr(LispAST *args, Env *env) {
     assert(args->kind == LISP_CONS);

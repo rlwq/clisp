@@ -3,6 +3,7 @@
 
 #include "string_view.h"
 #include "dynamic_array.h"
+#include <stdbool.h>
 #include <stddef.h>
 
 typedef enum {
@@ -31,6 +32,8 @@ typedef LispAST *(*LispBuiltin) (LispAST *args);
 
 struct LispAST {
     LISP_AST_KIND kind;
+    bool marked;
+    LispAST *next;
     union {
         StringView symbol;
         StringView string;
@@ -40,6 +43,11 @@ struct LispAST {
     } as;
 };
 
+LispAST *gc_alloc(LISP_AST_KIND kind);
+void gc_mark(LispAST *expr);
+void gc_free(LispAST *expr);
+void gc_sweep();
+
 typedef struct Env Env;
 
 struct Env {
@@ -48,7 +56,9 @@ struct Env {
     DA(LispAST *) values;
 };
 
-Env env_init(Env *parent); 
+Env* env_alloc(Env *parent);
+Env* env_free(Env *env);
+void env_mark(Env *env);
 
 void env_define(Env *env, StringView name, LispAST *value);
 

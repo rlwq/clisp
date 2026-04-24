@@ -11,9 +11,10 @@
 typedef struct {
     TokenDA tokens;
     size_t cursor;
+    DA(LispAST *) exprs;
 } Parser;
 
-Parser parser_init(TokenDA tokens);
+Parser* parser_alloc(TokenDA tokens);
 
 Token parser_lookup(Parser *parser); 
 bool parser_match(Parser *parser, TokenKind kind);
@@ -21,5 +22,6 @@ Token parser_advance(Parser *parser);
 bool parser_eat(Parser *parser, TokenKind kind);
 
 LispAST *parse_expr(Parser *parser);
+void parse(Parser *parser);
 
 #endif 

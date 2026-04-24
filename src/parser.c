@@ -5,11 +5,15 @@
 #include <assert.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <stdlib.h>
 
-Parser parser_init(TokenDA tokens) {
-    Parser result;
-    result.tokens = tokens;
-    result.cursor = 0;
+Parser* parser_alloc(TokenDA tokens) {
+    Parser *result = malloc(sizeof(Parser));
+    result->tokens = tokens;
+    result->cursor = 0;
+    
+    da_init(result->exprs);
+
     return result;
 }
 
@@ -65,8 +69,7 @@ LispAST *parse_expr(Parser *parser) {
             result = head;
         }
 
-        da_free(args);
-        
+        da_free(args); 
         return result;
     }
     
@@ -93,7 +96,14 @@ LispAST *parse_expr(Parser *parser) {
         ast->as.string = sv_shrink(parser_advance(parser).src, 1);
         return ast;
     }
-
+    
     assert(0 && "Unreachable");
     return NULL;
 }
+//
+// void parse(Parser *parser) {
+//     assert(PARSER_VALID_STATE(*parser));
+//     while (parser->cursor < parser->tokens.size) {
+//         da_push(parser->exprs, parse_expr(parser));
+//     }
+// }

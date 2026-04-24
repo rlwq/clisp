@@ -11,28 +11,6 @@
 #include "utils.h"
 #include "evaluator.h"
 
-void print_expr(LispAST *expr) {
-    switch (expr->kind) {
-        case LISP_NIL: printf("NIL"); break;
-        case LISP_INTEGER: printf("%d", expr->as.integer); break;
-        case LISP_STRING: printf("\""SV_FMT"\"", SV_ARGS(expr->as.string)); break;
-        case LISP_SYMBOL: printf(SV_FMT, SV_ARGS(expr->as.symbol)); break;
-        case LISP_CONS:
-            printf("<");
-            print_expr(expr->as.cons.car);
-            printf("; ");
-            print_expr(expr->as.cons.cdr);
-            printf(">");
-        break;
-        case LISP_BUILTIN:
-            NOT_IMPLEMENTED();
-        break;
-        case LISP_LAMBDA:
-            NOT_IMPLEMENTED();
-        break;
-    }
-}
-
 LispAST *lisp_add(LispAST *args) {
     int result_value = 0;
 
@@ -74,10 +52,37 @@ LispAST *lisp_id(LispAST *args) {
     return args;
 }
 
+void print_expr(LispAST *expr) {
+    switch (expr->kind) {
+        case LISP_NIL: printf("NIL"); break;
+        case LISP_INTEGER: printf("%d", expr->as.integer); break;
+        case LISP_STRING: printf("\""SV_FMT"\"", SV_ARGS(expr->as.string)); break;
+        case LISP_SYMBOL: printf(SV_FMT, SV_ARGS(expr->as.symbol)); break;
+        case LISP_CONS:
+            printf("<");
+            print_expr(expr->as.cons.car);
+            printf("; ");
+            print_expr(expr->as.cons.cdr);
+            printf(">");
+        break;
+        case LISP_BUILTIN:
+        break;
+        case LISP_LAMBDA:
+        break;
+    }
+}
+
+void parse(Parser *parser) {
+    assert(PARSER_VALID_STATE(*parser));
+    while (da_at(parser->tokens, parser->cursor).kind != TK_EOF) {
+        da_push(parser->exprs, parse_expr(parser));
+    }
+}
+
 int main() {
     char buff[2048];
 
-    Env env = env_init(NULL);
+    Env *env = env_alloc(NULL);
 
     LispAST *add_func = malloc(sizeof(LispAST));
     add_func->kind = LISP_BUILTIN;
@@ -91,26 +96,24 @@ int main() {
     id_func->kind = LISP_BUILTIN;
     id_func->as.builtin = lisp_id;
 
-    env_define(&env, sv_mk("add"), add_func);
-    env_define(&env, sv_mk("reverse"), reverse_func);
-    env_define(&env, sv_mk("id"), id_func);
+    env_define(env, sv_mk("add"), add_func);
+    env_define(env, sv_mk("reverse"), reverse_func);
+    env_define(env, sv_mk("id"), id_func);
 
-    while (true) {
-        if (!fgets(buff, sizeof(buff), stdin)) break;
+    fgets(buff, sizeof(buff), stdin);
 
-        StringView prog = sv_mk(buff);
-        Tokenizer t = tokenizer_init(prog);
-        tokenize(&t);
-        
-        Parser p = parser_init(t.tokens);
+    StringView prog = sv_mk(buff);
+    Tokenizer t = tokenizer_init(prog);
+    tokenize(&t);
 
-        LispAST *result = parse_expr(&p);
-        LispAST *r2 = lisp_eval(result, &env);
-        print_expr(result);
-        printf("\n");
-        print_expr(r2);
+    Parser *p = parser_alloc(t.tokens);
+    parse(p);
+
+    for (size_t i = 0; i < p->exprs.size; i++) {
+        print_expr(lisp_eval(da_at(p->exprs, i), env));
         printf("\n");
     }
+
     return 0;
 }
 
