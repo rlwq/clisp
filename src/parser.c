@@ -100,10 +100,3 @@ LispAST *parse_expr(Parser *parser) {
     assert(0 && "Unreachable");
     return NULL;
 }
-//
-// void parse(Parser *parser) {
-//     assert(PARSER_VALID_STATE(*parser));
-//     while (parser->cursor < parser->tokens.size) {
-//         da_push(parser->exprs, parse_expr(parser));
-//     }
-// }

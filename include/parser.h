@@ -11,7 +11,7 @@
 typedef struct {
     TokenDA tokens;
     size_t cursor;
-    DA(LispAST *) exprs;
+    da_list_ast_ptr exprs;
 } Parser;
 
 Parser* parser_alloc(TokenDA tokens);

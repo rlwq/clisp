@@ -33,7 +33,7 @@ typedef struct {
 #define TOKEN_FMT "<%d (%zu:%zu) \"%.*s\">"
 #define TOKEN_ARGS(t_) (t_).kind, ((t_).line + 1), ((t_).column + 1), (int) (t_).src.size, (t_).src.data
 
-Tokenizer tokenizer_init(StringView src);
+Tokenizer* tokenizer_alloc(StringView src);
 
 Token parse_token(StringView *src);
 void tokenize(Tokenizer *tokenizer);

@@ -3,10 +3,10 @@
 #include "string_view.h"
 #include "tokenizer.h"
 
-Tokenizer tokenizer_init(StringView src) {
-    Tokenizer result;
-    result.remainder = src;
-    da_init(result.tokens);
+Tokenizer *tokenizer_alloc(StringView src) {
+    Tokenizer *result = malloc(sizeof(Tokenizer));
+    result->remainder = src;
+    da_init(result->tokens);
 
     return result;
 }

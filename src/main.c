@@ -8,7 +8,6 @@
 #include "tokenizer.h"
 #include "parser.h"
 #include "lisp_ast.h"
-#include "utils.h"
 #include "evaluator.h"
 
 LispAST *lisp_add(LispAST *args) {
@@ -51,27 +50,6 @@ LispAST *lisp_reverse_list(LispAST *args) {
 LispAST *lisp_id(LispAST *args) {
     return args;
 }
-
-void print_expr(LispAST *expr) {
-    switch (expr->kind) {
-        case LISP_NIL: printf("NIL"); break;
-        case LISP_INTEGER: printf("%d", expr->as.integer); break;
-        case LISP_STRING: printf("\""SV_FMT"\"", SV_ARGS(expr->as.string)); break;
-        case LISP_SYMBOL: printf(SV_FMT, SV_ARGS(expr->as.symbol)); break;
-        case LISP_CONS:
-            printf("<");
-            print_expr(expr->as.cons.car);
-            printf("; ");
-            print_expr(expr->as.cons.cdr);
-            printf(">");
-        break;
-        case LISP_BUILTIN:
-        break;
-        case LISP_LAMBDA:
-        break;
-    }
-}
-
 void parse(Parser *parser) {
     assert(PARSER_VALID_STATE(*parser));
     while (da_at(parser->tokens, parser->cursor).kind != TK_EOF) {
@@ -79,40 +57,40 @@ void parse(Parser *parser) {
     }
 }
 
-int main() {
-    char buff[2048];
+char *read_file(const char *path) {
+    FILE *file = fopen(path, "rb");
+    assert(file);
 
-    Env *env = env_alloc(NULL);
+    fseek(file, 0, SEEK_END);
+    size_t size = ftell(file);
+    rewind(file);
 
-    LispAST *add_func = malloc(sizeof(LispAST));
-    add_func->kind = LISP_BUILTIN;
-    add_func->as.builtin = lisp_add;
+    char *src = malloc(size + 1);
+    assert(src);
 
-    LispAST *reverse_func = malloc(sizeof(LispAST));
-    reverse_func->kind = LISP_BUILTIN;
-    reverse_func->as.builtin = lisp_reverse_list;
+    fread(src, 1, size, file);
+    src[size] = '\0';
 
-    LispAST *id_func = malloc(sizeof(LispAST));
-    id_func->kind = LISP_BUILTIN;
-    id_func->as.builtin = lisp_id;
+    fclose(file);
+    return src;
+}
 
-    env_define(env, sv_mk("add"), add_func);
-    env_define(env, sv_mk("reverse"), reverse_func);
-    env_define(env, sv_mk("id"), id_func);
+int main(int argc, char** argv) {
+    assert(argc == 2);
+    char *src = read_file(argv[1]);
+    StringView prog = sv_mk(src);
 
-    fgets(buff, sizeof(buff), stdin);
+    Tokenizer *t = tokenizer_alloc(prog);
+    tokenize(t);
 
-    StringView prog = sv_mk(buff);
-    Tokenizer t = tokenizer_init(prog);
-    tokenize(&t);
-
-    Parser *p = parser_alloc(t.tokens);
+    Parser *p = parser_alloc(t->tokens);
     parse(p);
 
-    for (size_t i = 0; i < p->exprs.size; i++) {
-        print_expr(lisp_eval(da_at(p->exprs, i), env));
-        printf("\n");
-    }
+    Evaluator *evaluator = evaluator_alloc(p->exprs);
+    register_builtin(evaluator, sv_mk("add"), lisp_add);
+    register_builtin(evaluator, sv_mk("reverse"), lisp_reverse_list);
+    register_builtin(evaluator, sv_mk("id"), lisp_id);
+    evaluate_all(evaluator);
 
     return 0;
 }

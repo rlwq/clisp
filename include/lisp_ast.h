@@ -43,6 +43,8 @@ struct LispAST {
     } as;
 };
 
+typedef DA(LispAST *) da_list_ast_ptr;
+
 LispAST *gc_alloc(LISP_AST_KIND kind);
 void gc_mark(LispAST *expr);
 void gc_free(LispAST *expr);
