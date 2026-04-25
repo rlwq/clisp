@@ -53,6 +53,7 @@ char *read_file(const char *path) {
     return src;
 }
 
+// TODO: implement exprDA extraction from parser
 int main([[maybe_unused]] int argc, char** argv) {
     assert(argc == 2);
     char *src = read_file(argv[1]);

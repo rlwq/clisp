@@ -93,8 +93,7 @@ LispAST *parse_expr(Parser *parser) {
         LispAST *node = gc_alloc(LISP_NIL);
         
         for (size_t i = 0; i < args.size; i++) {
-            LispAST *head = gc_alloc(sizeof(LispAST));
-            head->kind = LISP_CONS;
+            LispAST *head = gc_alloc(LISP_CONS);
             head->as.cons.cdr = node;
             head->as.cons.car = da_at(args, args.size - i - 1);
             node = head;
@@ -106,24 +105,21 @@ LispAST *parse_expr(Parser *parser) {
     
     // Integer
     if (parser_match(parser, TK_INTEGER)) {
-        LispAST *ast = gc_alloc(sizeof(LispAST));
-        ast->kind = LISP_INTEGER;
+        LispAST *ast = gc_alloc(LISP_INTEGER);
         ast->as.integer = svtoi(parser_advance(parser).src);
         return ast;
     }
     
     // Symbol
     if (parser_match(parser, TK_SYMBOL)) {
-        LispAST *ast = gc_alloc(sizeof(LispAST));
-        ast->kind = LISP_SYMBOL;
+        LispAST *ast = gc_alloc(LISP_SYMBOL);
         ast->as.symbol = parser_advance(parser).src;
         return ast;
     }
     
     // String
     if (parser_match(parser, TK_STRING)) {
-        LispAST *ast = gc_alloc(sizeof(LispAST));
-        ast->kind = LISP_STRING;
+        LispAST *ast = gc_alloc(LISP_STRING);
         ast->as.string = sv_shrink(parser_advance(parser).src, 1);
         return ast;
     }
