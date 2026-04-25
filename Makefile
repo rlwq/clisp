@@ -3,7 +3,7 @@ CFLAGS := -I./include -Wall -Wextra -Wswitch-enum
 SFLAGS := -fsanitize=address,undefined -fanalyzer
 SRC := $(wildcard ./src/*.c) 
 HEADERS := $(wildcard ./include/*.h)
-TARGET := ./build/clisp
+TARGET := ./build/sparkle
 
 debug: $(SRC) $(HEADERS)
 	@mkdir -p ./build/

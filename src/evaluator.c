@@ -1,11 +1,12 @@
+#include <assert.h>
+#include <stdlib.h>
+#include <stdio.h>
+
 #include "evaluator.h"
 #include "dynamic_array.h"
 #include "lisp_ast.h"
 #include "string_view.h"
 #include "utils.h"
-#include <assert.h>
-#include <stdlib.h>
-#include <stdio.h>
 
 da_lisp_ast_ptr unpack_list(LispAST *expr) {
     da_lisp_ast_ptr result;
@@ -234,3 +235,4 @@ LispAST *eval_expr(LispAST *expr, Env *env) {
     
     UNREACHABLE();
 }
+
