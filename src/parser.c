@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "gc.h"
 #include "dynamic_array.h"
 #include "lexer.h"
 #include "lisp_ast.h"
@@ -89,7 +90,7 @@ LispAST *parse_expr(Parser *parser) {
             return NULL;
         }
 
-        LispAST *node = gc_alloc(LISP_NIL);
+        LispAST *node =  gc_alloc(LISP_NIL);
         
         for (size_t i = 0; i < args.size; i++) {
             LispAST *head = gc_alloc(LISP_CONS);

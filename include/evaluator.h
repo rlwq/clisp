@@ -12,7 +12,7 @@ typedef struct {
     size_t stmts_count;
 
     LispASTPtrDA results;
-    Env* global_scope;
+    Scope* global_scope;
 
     bool is_err;
 } Evaluator;

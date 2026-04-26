@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "gc.h"
 #include "dynamic_array.h"
 #include "string_view.h"
 #include "lexer.h"

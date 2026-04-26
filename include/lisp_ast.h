@@ -6,6 +6,8 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+typedef struct Scope Scope;
+
 typedef enum {
     LISP_NIL,
     LISP_CONS,
@@ -18,7 +20,6 @@ typedef enum {
 
 typedef struct LispAST LispAST;
 typedef DA(LispAST *) LispASTPtrDA;
-typedef struct Env Env;
 
 typedef struct {
     LispAST *car;
@@ -28,7 +29,7 @@ typedef struct {
 typedef struct {
     LispASTPtrDA args; 
     LispAST *expr;
-    Env *env;
+    Scope *scope;
 } Lambda;
 
 typedef LispAST *(*LispBuiltin) (LispAST *args);
@@ -49,25 +50,5 @@ struct LispAST {
 
 #define CAR(n_) ((n_)->as.cons.car)
 #define CDR(n_) ((n_)->as.cons.cdr)
-
-LispAST *gc_alloc(LISP_AST_KIND kind);
-void gc_mark(LispAST *expr);
-void gc_free(LispAST *expr);
-void gc_sweep();
-
-struct Env {
-    Env *parent;
-    DA(StringView) symbols;
-    DA(LispAST *) values;
-};
-
-size_t heap_size();
-Env* env_alloc(Env *parent);
-Env* env_free(Env *env);
-void env_mark(Env *env);
-
-void env_define(Env *env, StringView name, LispAST *value);
-
-LispAST *env_get(Env *env, LispAST *expr);
 
 #endif
