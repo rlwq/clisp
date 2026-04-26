@@ -1,30 +1,39 @@
 #include "gc.h"
+#include "lisp_ast.h"
 #include "utils.h"
+#include <assert.h>
+#include <stdlib.h>
 
-static LispAST *ast_heap = NULL;
-static size_t ast_heap_size = 0;
+GC *gc_alloc() {
+    GC *gc = malloc(sizeof(GC));
+    assert(gc);
 
-size_t heap_size() {
-    return ast_heap_size;
+    return gc;
 }
 
-LispAST *gc_alloc(LISP_AST_KIND kind) {
+void gc_free(GC *gc) {
+    // TODO: free all objects in heap 
+    free(gc);
+}
+
+// TODO: split allocation/deallocation logic with construction/deconstruction logic
+LispAST *gc_alloc_node(GC *gc, LISP_AST_KIND kind) {
     LispAST *node = malloc(sizeof(LispAST));
     assert(node); //TODO: add some error reporting
     
-    ast_heap_size++;
+    gc->nodes_count++;
     node->kind = kind;
 
     node->marked = false;
-    node->next = ast_heap;
-    ast_heap = node;
+    node->next = gc->nodes_heap;
+    gc->nodes_heap= node;
 
     return node;
 }
 
-void gc_free(LispAST *expr) {
+void gc_free_node(GC *gc, LispAST *expr) {
     assert(!expr->marked);
-    ast_heap_size--;
+    gc->nodes_count--;
 
     switch (expr->kind) {
         case LISP_NIL:
@@ -43,8 +52,8 @@ void gc_free(LispAST *expr) {
     }
 }
 
-void gc_sweep() {
-    LispAST **curr = &ast_heap;
+void gc_sweep(GC *gc) {
+    LispAST **curr = &(gc->nodes_heap);
 
     while (*curr) {
         if ((*curr)->marked) {
@@ -54,12 +63,12 @@ void gc_sweep() {
         else {
             LispAST *dead = *curr;
             *curr = dead->next;
-            gc_free(dead);
+            gc_free_node(gc, dead);
         }
     }
 }
 
-void gc_mark(LispAST *expr) {
+void gc_mark_node(LispAST *expr) {
     assert(expr);
     
     if (expr->marked) return;
@@ -80,8 +89,8 @@ void gc_mark(LispAST *expr) {
         break;
 
         case LISP_CONS:
-            gc_mark(expr->as.cons.car);
-            gc_mark(expr->as.cons.cdr);
+            gc_mark_node(expr->as.cons.car);
+            gc_mark_node(expr->as.cons.cdr);
         break;
     }
 }

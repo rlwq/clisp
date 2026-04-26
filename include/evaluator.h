@@ -3,6 +3,7 @@
 
 #include "lisp_ast.h"
 #include "string_view.h"
+#include "typedefs.h"
 
 #define EVALUATOR_DONE(e_) ((e_)->stmts_count == 0)
 #define EVALUATOR_VALID(e_) (!EVALUATOR_DONE(e_) && !(e_)->is_err)
@@ -14,10 +15,12 @@ typedef struct {
     LispASTPtrDA results;
     Scope* global_scope;
 
+    GC *gc;
+
     bool is_err;
 } Evaluator;
 
-Evaluator *evaluator_alloc(LispASTPtrDA exprs);
+Evaluator *evaluator_alloc(LispASTPtrDA exprs, GC *gc);
 void evaluator_free(Evaluator *evaluator);
 
 // TODO: Should maybe bind to a Symbol or smth like that

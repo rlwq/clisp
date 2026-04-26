@@ -2,11 +2,9 @@
 #define LISP_AST_H
 
 #include "string_view.h"
-#include "dynamic_array.h"
+#include "typedefs.h"
 #include <stdbool.h>
 #include <stddef.h>
-
-typedef struct Scope Scope;
 
 typedef enum {
     LISP_NIL,
@@ -17,9 +15,6 @@ typedef enum {
     LISP_BUILTIN,
     LISP_LAMBDA,
 } LISP_AST_KIND;
-
-typedef struct LispAST LispAST;
-typedef DA(LispAST *) LispASTPtrDA;
 
 typedef struct {
     LispAST *car;
@@ -32,7 +27,7 @@ typedef struct {
     Scope *scope;
 } Lambda;
 
-typedef LispAST *(*LispBuiltin) (LispAST *args);
+typedef LispAST *(*LispBuiltin) (LispAST *args, GC *gc);
 
 struct LispAST {
     LISP_AST_KIND kind;

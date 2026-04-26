@@ -12,28 +12,28 @@
 #include "evaluator.h"
 #include "debug.h"
 
-LispAST *lisp_int_eq(LispAST *args) {
+LispAST *lisp_int_eq(LispAST *args, GC *gc) {
     if (CAR(args)->as.integer == CAR(CDR(args))->as.integer) {
-        LispAST *node = gc_alloc(LISP_INTEGER);
+        LispAST *node = gc_alloc_node(gc, LISP_INTEGER);
         node->as.integer = 1;
         return node;
     }
-    return gc_alloc(LISP_NIL);
+    return gc_alloc_node(gc, LISP_NIL);
 }
 
-LispAST *lisp_sub(LispAST *args) {
-    LispAST *node = gc_alloc(LISP_INTEGER);
+LispAST *lisp_sub(LispAST *args, GC *gc) {
+    LispAST *node = gc_alloc_node(gc, LISP_INTEGER);
     node->as.integer = CAR(args)->as.integer - CAR(CDR(args))->as.integer;
     return node;
 }
 
-LispAST *lisp_add(LispAST *args) {
+LispAST *lisp_add(LispAST *args, GC *gc) {
     int result_value = 0;
 
     for (; args->kind != LISP_NIL; args = args->as.cons.cdr)
         result_value += args->as.cons.car->as.integer;
 
-    LispAST *node = gc_alloc(LISP_INTEGER);
+    LispAST *node = gc_alloc_node(gc, LISP_INTEGER);
     node->as.integer = result_value;
     return node;
 }
@@ -56,6 +56,7 @@ char *read_file(const char *path) {
     return src;
 }
 
+// TODO: make a typedefs.h file
 int main(int argc, char** argv) {
     if (argc != 2) {
         printf("USAGE: %s source.rkl\n", argv[0]);
@@ -79,10 +80,11 @@ int main(int argc, char** argv) {
     }
   
     TokenDA tokens = extract_tokens(lexer);
-
-    Parser *parser = parser_alloc(tokens);
-    parse_all(parser);
     
+    GC *gc = gc_alloc();
+    Parser *parser = parser_alloc(tokens, gc);
+    parse_all(parser);
+
     if (parser->is_err) {
         printf("%s:%zu:%zu: [ERROR] Unexpected token \""SV_FMT"\".\n",
                 argv[1], parser->tokens->line + 1, parser->tokens->column + 1,
@@ -95,7 +97,7 @@ int main(int argc, char** argv) {
     
     LispASTPtrDA exprs = extract_exprs(parser);
 
-    Evaluator *evaluator = evaluator_alloc(exprs);
+    Evaluator *evaluator = evaluator_alloc(exprs, gc);
     register_builtin(evaluator, sv_mk("+"), lisp_add);
     register_builtin(evaluator, sv_mk("-"), lisp_sub);
     register_builtin(evaluator, sv_mk("="), lisp_int_eq);
@@ -110,7 +112,7 @@ int main(int argc, char** argv) {
         printf("\n");
     }
 
-    gc_sweep();
+    gc_sweep(gc);
 
     evaluator_free(evaluator);
     da_free(exprs);

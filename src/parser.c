@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "gc.h"
 #include "dynamic_array.h"
 #include "lexer.h"
 #include "lisp_ast.h"
@@ -12,13 +11,14 @@
 
 #define CURR(p_) (assert((p_)), *((p_)->tokens))
 
-Parser* parser_alloc(TokenDA tokens) {
+Parser* parser_alloc(TokenDA tokens, GC *gc) {
     Parser *parser = malloc(sizeof(Parser));
     assert(parser);
 
     parser->tokens = tokens.data;
     parser->tokens_count = tokens.size;
     parser->is_err = false;
+    parser->gc = gc;
 
     da_init(parser->exprs);
 
@@ -90,10 +90,10 @@ LispAST *parse_expr(Parser *parser) {
             return NULL;
         }
 
-        LispAST *node =  gc_alloc(LISP_NIL);
+        LispAST *node =  gc_alloc_node(parser->gc, LISP_NIL);
         
         for (size_t i = 0; i < args.size; i++) {
-            LispAST *head = gc_alloc(LISP_CONS);
+            LispAST *head = gc_alloc_node(parser->gc, LISP_CONS);
             head->as.cons.cdr = node;
             head->as.cons.car = da_at(args, args.size - i - 1);
             node = head;
@@ -105,21 +105,21 @@ LispAST *parse_expr(Parser *parser) {
     
     // Integer
     if (parser_match(parser, TK_INTEGER)) {
-        LispAST *ast = gc_alloc(LISP_INTEGER);
+        LispAST *ast = gc_alloc_node(parser->gc, LISP_INTEGER);
         ast->as.integer = svtoi(parser_advance(parser).src);
         return ast;
     }
     
     // Symbol
     if (parser_match(parser, TK_SYMBOL)) {
-        LispAST *ast = gc_alloc(LISP_SYMBOL);
+        LispAST *ast = gc_alloc_node(parser->gc, LISP_SYMBOL);
         ast->as.symbol = parser_advance(parser).src;
         return ast;
     }
     
     // String
     if (parser_match(parser, TK_STRING)) {
-        LispAST *ast = gc_alloc(LISP_STRING);
+        LispAST *ast = gc_alloc_node(parser->gc, LISP_STRING);
         ast->as.string = sv_shrink(parser_advance(parser).src, 1);
         return ast;
     }

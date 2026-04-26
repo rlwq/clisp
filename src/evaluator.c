@@ -11,13 +11,15 @@
 
 #define CURR(e_) (*((e_)->stmts))
 
-Evaluator *evaluator_alloc(LispASTPtrDA exprs) {
+Evaluator *evaluator_alloc(LispASTPtrDA exprs, GC *gc) {
     Evaluator *evaluator = malloc(sizeof(Evaluator));
     assert(evaluator);
 
     evaluator->stmts = exprs.data;
     evaluator->stmts_count = exprs.size;
     evaluator->is_err = false;
+
+    evaluator->gc = gc;
 
     evaluator->global_scope = scope_alloc(NULL);
     da_init(evaluator->results);
@@ -39,7 +41,7 @@ LispAST *evaluator_advance(Evaluator *evaluator) {
     return curr;
 }
 
-LispAST *eval_expr(LispAST *expr, Scope *scope);
+LispAST *eval_expr(LispAST *expr, Evaluator *evaluator, Scope *scope);
 
 LispASTPtrDA unpack_lisp_list(LispAST *expr) {
     LispASTPtrDA array;
@@ -56,18 +58,18 @@ LispASTPtrDA unpack_lisp_list(LispAST *expr) {
 void evaluator_mark_stmts(Evaluator *evaluator) {
     scope_mark(evaluator->global_scope);
     for (size_t i = 0; i < evaluator->stmts_count; i++)
-        gc_mark(evaluator->stmts[i]);
+        gc_mark_node(evaluator->stmts[i]);
 }
 
-LispAST *eval_list(LispAST *expr, Scope *scope) {
+LispAST *eval_list(LispAST *expr, Evaluator *evaluator, Scope *scope) {
     assert(expr->kind == LISP_NIL || expr->kind == LISP_CONS);
 
     // TODO: make an iterative approach
     if (expr->kind == LISP_NIL) return expr;
     if (expr->kind == LISP_CONS) {
-        LispAST *node = gc_alloc(LISP_CONS);
-        node->as.cons.car = eval_expr(expr->as.cons.car, scope);
-        node->as.cons.cdr = eval_list(expr->as.cons.cdr, scope);
+        LispAST *node = gc_alloc_node(evaluator->gc, LISP_CONS);
+        node->as.cons.car = eval_expr(expr->as.cons.car, evaluator, scope);
+        node->as.cons.cdr = eval_list(expr->as.cons.cdr, evaluator, scope);
         return node;
     }
 
@@ -78,13 +80,13 @@ void eval_current(Evaluator *evaluator) {
     assert(EVALUATOR_VALID(evaluator));
     
     LispAST *stmt = evaluator_advance(evaluator);
-    LispAST *node = eval_expr(stmt, evaluator->global_scope);
+    LispAST *node = eval_expr(stmt, evaluator, evaluator->global_scope);
 
     if (node) da_push(evaluator->results, node);
 }
 
 void register_builtin(Evaluator *evaluator, StringView name, LispBuiltin func_ptr) {
-    LispAST *builtin = gc_alloc(LISP_BUILTIN);
+    LispAST *builtin = gc_alloc_node(evaluator->gc, LISP_BUILTIN);
     builtin->as.builtin = func_ptr;
 
     scope_define(evaluator->global_scope, name, builtin);
@@ -97,22 +99,22 @@ void eval_all(Evaluator *evaluator) {
         eval_current(evaluator);
 }
 
-LispAST *eval_let_form(LispAST *symbol, LispAST *expr, Scope *scope) {
+LispAST *eval_let_form(LispAST *symbol, LispAST *expr, Evaluator *evaluator, Scope *scope) {
     assert(symbol->kind == LISP_SYMBOL);
-    LispAST *node = eval_expr(expr, scope);
+    LispAST *node = eval_expr(expr, evaluator, scope);
     scope_define(scope, symbol->as.symbol, node);
     return node;
 }
 
-LispAST *eval_if_form(LispAST *condition, LispAST *if_true, LispAST *if_false, Scope *scope) {
-    LispAST *expr_result = eval_expr(condition, scope);
+LispAST *eval_if_form(LispAST *condition, LispAST *if_true, LispAST *if_false, Evaluator *evaluator, Scope *scope) {
+    LispAST *expr_result = eval_expr(condition, evaluator, scope);
     if (expr_result->kind == LISP_NIL)
-        return eval_expr(if_false, scope); 
-    return eval_expr(if_true, scope);
+        return eval_expr(if_false, evaluator, scope); 
+    return eval_expr(if_true, evaluator, scope);
 }
 
-LispAST *eval_lambda_form(LispASTPtrDA args, LispAST *subexpr, Scope *scope) {
-    LispAST *lambda_result = gc_alloc(LISP_LAMBDA);
+LispAST *eval_lambda_form(LispASTPtrDA args, LispAST *subexpr, Evaluator *evaluator, Scope *scope) {
+    LispAST *lambda_result = gc_alloc_node(evaluator->gc, LISP_LAMBDA);
 
     lambda_result->as.lambda.args = args;
     lambda_result->as.lambda.expr = subexpr;
@@ -121,7 +123,7 @@ LispAST *eval_lambda_form(LispASTPtrDA args, LispAST *subexpr, Scope *scope) {
     return lambda_result;
 }
 
-LispAST *eval_lambda_call(LispAST *lambda, LispAST *args) {
+LispAST *eval_lambda_call(LispAST *lambda, LispAST *args, Evaluator *evaluator) {
     Scope *local_scope = scope_alloc(lambda->as.lambda.scope);
     
     for (size_t i = 0; args->kind != LISP_NIL; args = args->as.cons.cdr) {
@@ -130,7 +132,7 @@ LispAST *eval_lambda_call(LispAST *lambda, LispAST *args) {
         i++;
     }
 
-    LispAST *result = eval_expr(lambda->as.lambda.expr, local_scope);
+    LispAST *result = eval_expr(lambda->as.lambda.expr, evaluator, local_scope);
     
     // scope_free(local_scope);
     // TODO: should manage allocated scopes
@@ -138,7 +140,7 @@ LispAST *eval_lambda_call(LispAST *lambda, LispAST *args) {
     return result;
 }
 
-LispAST *dispatch_special_form(LispAST *head, LispAST *args, Scope *scope) {
+LispAST *dispatch_special_form(LispAST *head, LispAST *args, Evaluator *evaluator, Scope *scope) {
     if (head->kind != LISP_SYMBOL) return NULL;
 
     if (sv_eq(head->as.symbol, sv_mk("if"))) {
@@ -147,7 +149,7 @@ LispAST *dispatch_special_form(LispAST *head, LispAST *args, Scope *scope) {
         LispAST *if_true = CAR(CDR(args));
         LispAST *if_false = CAR(CDR(CDR(args)));
 
-        return eval_if_form(condition, if_true, if_false, scope);
+        return eval_if_form(condition, if_true, if_false, evaluator, scope);
     }
 
     if (sv_eq(head->as.symbol, sv_mk("let"))) {
@@ -160,40 +162,40 @@ LispAST *dispatch_special_form(LispAST *head, LispAST *args, Scope *scope) {
         assert(value_cons->kind == LISP_CONS);
         assert(value_cons->as.cons.cdr->kind == LISP_NIL);
 
-        return eval_let_form(symbol, value_cons->as.cons.car, scope);
+        return eval_let_form(symbol, value_cons->as.cons.car, evaluator, scope);
     }
 
     if (sv_eq(head->as.symbol, sv_mk("lambda"))) {
         // TODO: make proper assertions
         LispASTPtrDA lambda_args = unpack_lisp_list(CAR(args));
         LispAST *lambda_subexpr = CAR(CDR(args));
-        LispAST *result = eval_lambda_form(lambda_args, lambda_subexpr, scope);
+        LispAST *result = eval_lambda_form(lambda_args, lambda_subexpr, evaluator, scope);
         return result;
     }
 
     return NULL;
 }
 
-LispAST *eval_cons(LispAST *expr, Scope *scope) {
+LispAST *eval_cons(LispAST *expr, Evaluator *evaluator, Scope *scope) {
     assert(expr->kind == LISP_CONS);
 
     LispAST *head = expr->as.cons.car; 
     LispAST *args = expr->as.cons.cdr; 
 
-    LispAST *special_form = dispatch_special_form(head, args, scope);
+    LispAST *special_form = dispatch_special_form(head, args, evaluator, scope);
 
     if (special_form) return special_form;
 
-    LispAST *evaluated_head = eval_expr(head, scope);
-    LispAST *evaluated_args = eval_list(args, scope);
+    LispAST *evaluated_head = eval_expr(head, evaluator, scope);
+    LispAST *evaluated_args = eval_list(args, evaluator, scope);
 
     switch (evaluated_head->kind) {
         case LISP_LAMBDA:
-            return eval_lambda_call(evaluated_head, evaluated_args);
+            return eval_lambda_call(evaluated_head, evaluated_args, evaluator);
         break;
 
         case LISP_BUILTIN:
-            return evaluated_head->as.builtin(evaluated_args);
+            return evaluated_head->as.builtin(evaluated_args, evaluator->gc);
         break;
 
         case LISP_CONS:
@@ -208,7 +210,7 @@ LispAST *eval_cons(LispAST *expr, Scope *scope) {
     UNREACHABLE();
 }
 
-LispAST *eval_expr(LispAST *expr, Scope *scope) {
+LispAST *eval_expr(LispAST *expr, Evaluator *evaluator, Scope *scope) {
     switch (expr->kind) {
         case LISP_NIL:
         case LISP_INTEGER:
@@ -220,12 +222,12 @@ LispAST *eval_expr(LispAST *expr, Scope *scope) {
 
         case LISP_SYMBOL:
             if (sv_eq(expr->as.symbol, sv_mk("NIL")))
-                return gc_alloc(LISP_NIL);
+                return gc_alloc_node(evaluator->gc, LISP_NIL);
             return scope_get(scope, expr);
         break;
 
         case LISP_CONS:
-            return eval_cons(expr, scope);
+            return eval_cons(expr, evaluator, scope);
         break;
     }
     

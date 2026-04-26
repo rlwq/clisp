@@ -6,6 +6,7 @@
 
 #include "lexer.h"
 #include "lisp_ast.h"
+#include "gc.h"
 
 #define PARSER_DONE(p_) ((p_)->tokens_count == 0)
 #define PARSER_VALID(p_) (!PARSER_DONE(p_) && !(p_)->is_err)
@@ -15,10 +16,12 @@ typedef struct {
     size_t tokens_count;
     LispASTPtrDA exprs;
 
+    GC *gc;
+
     bool is_err;
 } Parser;
 
-Parser *parser_alloc(TokenDA tokens);
+Parser *parser_alloc(TokenDA tokens, GC *gc);
 void parser_free(Parser *parser);
 
 void parse_current(Parser *parser);

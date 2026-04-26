@@ -44,6 +44,6 @@ void scope_mark(Scope *scope) {
     if (!scope) return;
 
     for (size_t i = 0; i < scope->symbols.size; i++)
-        gc_mark(da_at(scope->values, i));
+        gc_mark_node(da_at(scope->values, i));
     scope_mark(scope->parent);
 }
