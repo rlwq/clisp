@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 #include "gc.h"
@@ -101,8 +102,12 @@ void register_builtin(Evaluator *evaluator, StringView name, LispBuiltin func_pt
 void eval_all(Evaluator *evaluator) {
     assert(EVALUATOR_VALID(evaluator));
 
-    while (EVALUATOR_VALID(evaluator))
+    while (EVALUATOR_VALID(evaluator)) {
         eval_current(evaluator);
+        evaluator_mark(evaluator);
+
+        gc_sweep(evaluator->gc);
+    }
 }
 
 LispAST *eval_let_form(LispAST *symbol, LispAST *expr, Evaluator *evaluator) {

@@ -6,6 +6,7 @@
 
 #include <assert.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 
@@ -101,6 +102,9 @@ void gc_free_scope(GC *gc, Scope *scope) {
 }
 
 void gc_sweep(GC *gc) {
+    printf("OBJECTS BEFORE CLEANUP: %zu\n",
+           gc->scopes_count + gc->nodes_count);
+
     LispAST **curr_node = &(gc->nodes_heap);
 
     while (*curr_node) {
@@ -127,7 +131,10 @@ void gc_sweep(GC *gc) {
             *curr_scope = dead->heap_next;
             gc_free_scope(gc, dead);
         }
-    } 
+    }
+
+    printf("OBJECTS  AFTER CLEANUP: %zu\n\n",
+           gc->scopes_count + gc->nodes_count);
 }
 
 void gc_mark_node(LispAST *expr) {
