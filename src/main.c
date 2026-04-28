@@ -9,32 +9,32 @@
 #include "string_view.h"
 #include "lexer.h"
 #include "parser.h"
-#include "lisp_ast.h"
+#include "lisp_node.h"
 #include "evaluator.h"
 #include "debug.h"
 
-LispAST *lisp_int_eq(LispAST *args, GC *gc) {
+LispNode *lisp_int_eq(LispNode *args, GC *gc) {
     if (CAR(args)->as.integer == CAR(CDR(args))->as.integer) {
-        LispAST *node = gc_alloc_node(gc, LISP_INTEGER);
+        LispNode *node = gc_alloc_node(gc, LISP_INTEGER);
         node->as.integer = 1;
         return node;
     }
     return gc_alloc_node(gc, LISP_NIL);
 }
 
-LispAST *lisp_sub(LispAST *args, GC *gc) {
-    LispAST *node = gc_alloc_node(gc, LISP_INTEGER);
+LispNode *lisp_sub(LispNode *args, GC *gc) {
+    LispNode *node = gc_alloc_node(gc, LISP_INTEGER);
     node->as.integer = CAR(args)->as.integer - CAR(CDR(args))->as.integer;
     return node;
 }
 
-LispAST *lisp_add(LispAST *args, GC *gc) {
+LispNode *lisp_add(LispNode *args, GC *gc) {
     int result_value = 0;
 
     for (; args->kind != LISP_NIL; args = args->as.cons.cdr)
         result_value += args->as.cons.car->as.integer;
 
-    LispAST *node = gc_alloc_node(gc, LISP_INTEGER);
+    LispNode *node = gc_alloc_node(gc, LISP_INTEGER);
     node->as.integer = result_value;
     return node;
 }
@@ -96,7 +96,7 @@ int main(int argc, char** argv) {
         return 1;
     }
     
-    LispASTPtrDA exprs = extract_exprs(parser);
+    LispNodePtrDA exprs = extract_exprs(parser);
 
     Evaluator *evaluator = evaluator_alloc(exprs, gc);
 
@@ -109,7 +109,7 @@ int main(int argc, char** argv) {
 
     //TODO: maybe should be an iterative approach
 
-    LispASTPtrDA results = extract_results(evaluator);
+    LispNodePtrDA results = extract_results(evaluator);
 
     for (size_t i = 0; i < results.size; i++) {
         print_expr(da_at(results, i));

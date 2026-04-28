@@ -6,8 +6,9 @@
 
 #include "dynamic_array.h"
 #include "lexer.h"
-#include "lisp_ast.h"
+#include "lisp_node.h"
 #include "parser.h"
+#include "gc.h"
 
 #define CURR(p_) (assert((p_)), *((p_)->tokens))
 
@@ -69,7 +70,7 @@ bool parser_expect(Parser *parser, TokenKind kind) {
     return true;
 }
 
-LispAST *parse_expr(Parser *parser) {
+LispNode *parse_expr(Parser *parser) {
     assert(PARSER_VALID(parser));
     
     if (parser_match(parser, TK_EOF)) {
@@ -79,7 +80,7 @@ LispAST *parse_expr(Parser *parser) {
 
     // S-expr 
     if (parser_eat(parser, TK_L_PAREN)) {
-        DA(LispAST *) args;
+        DA(LispNode *) args;
         da_init(args);
 
         while (PARSER_VALID(parser) && !parser_match(parser, TK_R_PAREN))
@@ -90,10 +91,10 @@ LispAST *parse_expr(Parser *parser) {
             return NULL;
         }
 
-        LispAST *node =  gc_alloc_node(parser->gc, LISP_NIL);
+        LispNode *node = gc_alloc_node(parser->gc, LISP_NIL);
         
         for (size_t i = 0; i < args.size; i++) {
-            LispAST *head = gc_alloc_node(parser->gc, LISP_CONS);
+            LispNode *head = gc_alloc_node(parser->gc, LISP_CONS);
             head->as.cons.cdr = node;
             head->as.cons.car = da_at(args, args.size - i - 1);
             node = head;
@@ -105,21 +106,21 @@ LispAST *parse_expr(Parser *parser) {
     
     // Integer
     if (parser_match(parser, TK_INTEGER)) {
-        LispAST *ast = gc_alloc_node(parser->gc, LISP_INTEGER);
+        LispNode *ast = gc_alloc_node(parser->gc, LISP_INTEGER);
         ast->as.integer = svtoi(parser_advance(parser).src);
         return ast;
     }
     
     // Symbol
     if (parser_match(parser, TK_SYMBOL)) {
-        LispAST *ast = gc_alloc_node(parser->gc, LISP_SYMBOL);
+        LispNode *ast = gc_alloc_node(parser->gc, LISP_SYMBOL);
         ast->as.symbol = parser_advance(parser).src;
         return ast;
     }
     
     // String
     if (parser_match(parser, TK_STRING)) {
-        LispAST *ast = gc_alloc_node(parser->gc, LISP_STRING);
+        LispNode *ast = gc_alloc_node(parser->gc, LISP_STRING);
         ast->as.string = sv_shrink(parser_advance(parser).src, 1);
         return ast;
     }
@@ -131,7 +132,7 @@ LispAST *parse_expr(Parser *parser) {
 void parse_current(Parser *parser) {
     assert(PARSER_VALID(parser));
     
-    LispAST *expr = parse_expr(parser);
+    LispNode *expr = parse_expr(parser);
     if (expr) da_push(parser->exprs, expr);
 }
 
@@ -142,8 +143,8 @@ void parse_all(Parser *parser) {
         parse_current(parser);
 }
 
-LispASTPtrDA extract_exprs(Parser *parser) {
-    LispASTPtrDA result = parser->exprs;
+LispNodePtrDA extract_exprs(Parser *parser) {
+    LispNodePtrDA result = parser->exprs;
     da_nullify(parser->exprs);
     return result;
 }

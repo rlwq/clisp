@@ -1,6 +1,6 @@
 #include "gc.h"
 #include "dynamic_array.h"
-#include "lisp_ast.h"
+#include "lisp_node.h"
 #include "scope.h"
 #include "typedefs.h"
 
@@ -25,7 +25,7 @@ GC *gc_alloc(void) {
 
 void gc_free(GC *gc) {
     while (gc->nodes_heap) {
-        LispAST *next = gc->nodes_heap->heap_next;
+        LispNode *next = gc->nodes_heap->heap_next;
         gc_free_node(gc, gc->nodes_heap);
         gc->nodes_heap = next;
     }
@@ -40,8 +40,8 @@ void gc_free(GC *gc) {
 }
 
 // TODO: split allocation/deallocation logic with construction/deconstruction logic
-LispAST *gc_alloc_node(GC *gc, LISP_AST_KIND kind) {
-    LispAST *node = malloc(sizeof(LispAST));
+LispNode *gc_alloc_node(GC *gc, LISP_NODE_KIND kind) {
+    LispNode *node = malloc(sizeof(LispNode));
     assert(node); //TODO: add some error reporting
     
     gc->nodes_count++;
@@ -54,7 +54,7 @@ LispAST *gc_alloc_node(GC *gc, LISP_AST_KIND kind) {
     return node;
 }
 
-void gc_free_node(GC *gc, LispAST *expr) {
+void gc_free_node(GC *gc, LispNode *expr) {
     assert(!expr->marked);
     gc->nodes_count--;
 
@@ -105,7 +105,7 @@ void gc_sweep(GC *gc) {
     printf("OBJECTS BEFORE CLEANUP: %zu\n",
            gc->scopes_count + gc->nodes_count);
 
-    LispAST **curr_node = &(gc->nodes_heap);
+    LispNode **curr_node = &(gc->nodes_heap);
 
     while (*curr_node) {
         if ((*curr_node)->marked) {
@@ -113,7 +113,7 @@ void gc_sweep(GC *gc) {
             curr_node = &((*curr_node)->heap_next);
         }
         else {
-            LispAST *dead = *curr_node;
+            LispNode *dead = *curr_node;
             *curr_node = dead->heap_next;
             gc_free_node(gc, dead);
         }
@@ -137,7 +137,7 @@ void gc_sweep(GC *gc) {
            gc->scopes_count + gc->nodes_count);
 }
 
-void gc_mark_node(LispAST *expr) {
+void gc_mark_node(LispNode *expr) {
     assert(expr);
     
     if (expr->marked) return;

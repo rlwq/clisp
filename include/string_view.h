@@ -48,18 +48,4 @@ StringView sv_drop_ws(StringView sv);
 
 int svtoi(StringView sv);
 
-/* String Builder Data Structure */
-
-typedef struct {
-    char *data;
-    size_t size;
-} StringBuilder;
-
-// TODO: add custom allocation
-#define sb(n_) ( (StringBuilder) { .data = malloc(n_), .size = 0 } )
-#define sb_free(sb_) do {  \
-        free((sb_).data);  \
-        (sb_).size = 0;    \
-    } while (0)
-
 #endif

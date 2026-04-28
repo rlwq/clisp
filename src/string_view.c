@@ -74,12 +74,26 @@ StringView sv_drop_ws(StringView sv) {
 
 // TODO: unsafe, no sound logic
 int svtoi(StringView sv) {
-    int result = 0;
-    
-    for (size_t i = 0; i < sv.size; i++)
-        result = 10 * result + sv_at(sv, i) - '0';
+    assert(sv.size);
+    assert(sv_head(sv) == '+' || sv_head(sv) == '-' || isdigit(sv_head(sv)));
 
-    return result;
+    int result = 0;
+    int sign = 1;
+
+    if (sv_head(sv) == '+')
+        sv = sv_drop(sv, 1);
+    else if (sv_head(sv) == '-') {
+        sv = sv_drop(sv, 1);
+        sign = -1;
+    }
+
+
+    for (size_t i = 0; i < sv.size; i++) {
+        assert(isdigit(sv_at(sv, i)));
+        result = 10 * result + sv_at(sv, i) - '0';
+    }
+
+    return sign * result;
 }
 
 

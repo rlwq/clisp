@@ -1,7 +1,7 @@
 #ifndef EVALUATOR_H
 #define EVALUATOR_H
 
-#include "lisp_ast.h"
+#include "lisp_node.h"
 #include "string_view.h"
 #include "typedefs.h"
 
@@ -11,10 +11,10 @@
 #define CURR_SCOPE(e_) (da_at((e_)->scope_stack, (e_)->scope_stack.size-1))
 
 typedef struct {
-    LispAST **stmts;
+    LispNode **stmts;
     size_t stmts_count;
 
-    LispASTPtrDA results;
+    LispNodePtrDA results;
     
     // TODO: maybe reimplement as an Linked List
     DA(Scope *) scope_stack;
@@ -24,7 +24,7 @@ typedef struct {
     bool is_err;
 } Evaluator;
 
-Evaluator *evaluator_alloc(LispASTPtrDA exprs, GC *gc);
+Evaluator *evaluator_alloc(LispNodePtrDA exprs, GC *gc);
 void evaluator_free(Evaluator *evaluator);
 
 // TODO: Should maybe bind to a Symbol or smth like that
@@ -36,7 +36,7 @@ void eval_all(Evaluator *evaluator);
 void push_scope(Evaluator *evaluator, Scope *scope);
 void pop_scope(Evaluator *evaluator);
 
-LispASTPtrDA extract_results(Evaluator *evaluator);
+LispNodePtrDA extract_results(Evaluator *evaluator);
 
 void evaluator_mark(Evaluator *evaluator);
 

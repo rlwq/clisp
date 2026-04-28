@@ -16,7 +16,7 @@ The **AST-walking interpreter** is written from scratch in **ISO C11**, no depen
 
 ### To be done
 
-* [**Mark-and-sweep GC**](https://en.wikipedia.org/wiki/Tracing_garbage_collection) - automatic memory management (in progress integration)
+* [**Mark-and-sweep GC**](https://en.wikipedia.org/wiki/Tracing_garbage_collection) - automatic memory management (in progress of integration)
 * **REPL** - interactive read-eval-print loop for live code interaction
 * **Standard library** - a rich set of general-purpose functions and modules 
 * **Modular system** - organize code into reusable, importable modules
@@ -30,7 +30,7 @@ The **AST-walking interpreter** is written from scratch in **ISO C11**, no depen
 # Optimized build
 make build
 
-# Debug build (with AddressSanitizer, UBSan, Assertions)
+# Debug build (with ASan, UBSan, Assertions)
 make debug
 ```
 

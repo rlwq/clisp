@@ -1,12 +1,12 @@
 #include "scope.h"
 #include <assert.h>
 
-void scope_define(Scope *scope, StringView name, LispAST *value) {
+void scope_define(Scope *scope, StringView name, LispNode *value) {
     da_push(scope->symbols, name);
     da_push(scope->values, value);
 }
 
-LispAST *scope_get(Scope *scope, LispAST *expr) {
+LispNode *scope_get(Scope *scope, LispNode *expr) {
     if (scope == NULL)
         assert(0 && "No symbol found. No error handling."); //TODO: error reporting
 

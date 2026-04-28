@@ -5,8 +5,8 @@
 
 typedef struct Scope Scope;
 
-typedef struct LispAST LispAST;
+typedef struct LispNode LispNode;
 typedef struct GC GC;
-typedef DA(LispAST *) LispASTPtrDA;
+typedef DA(LispNode *) LispNodePtrDA;
 
 #endif

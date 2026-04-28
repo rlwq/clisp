@@ -3,7 +3,7 @@
 #include "string_view.h"
 
 
-void print_expr(LispAST *expr) {
+void print_expr(LispNode *expr) {
     switch (expr->kind) {
         case LISP_NIL: printf("NIL"); break;
         case LISP_INTEGER: printf("%d", expr->as.integer); break;
