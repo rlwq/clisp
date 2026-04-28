@@ -72,7 +72,6 @@ StringView sv_drop_ws(StringView sv) {
     return sv_drop(sv, size);
 }
 
-// TODO: unsafe, no sound logic
 int svtoi(StringView sv) {
     assert(sv.size);
     assert(sv_head(sv) == '+' || sv_head(sv) == '-' || isdigit(sv_head(sv)));

@@ -8,14 +8,12 @@ void scope_define(Scope *scope, StringView name, LispNode *value) {
 }
 
 LispNode *scope_get(Scope *scope, StringView name) {
-    if (scope == NULL)
-        assert(0 && "No symbol found. No error handling."); //TODO: error reporting
-
-    for (size_t i = 0; i < scope->symbols.size; i++) {
-        if (sv_eq(da_at(scope->symbols, i), name))
-            return da_at(scope->values, i);
+    for (Scope *curr = scope; curr != NULL; curr = curr->parent) {
+        for (size_t i = 0; i < curr->symbols.size; i++) {
+            if (sv_eq(da_at(curr->symbols, i), name))
+                return da_at(curr->values, i);
+        }
     }
-
-    return scope_get(scope->parent, name);    
+    assert(0 && "No symbol found. No error handling.");
 }
 
