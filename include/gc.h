@@ -1,7 +1,6 @@
 #ifndef GC_H
 #define GC_H
 
-#include "typedefs.h"
 #include "lisp_node.h"
 
 struct GC {
@@ -15,7 +14,7 @@ struct GC {
 GC *gc_alloc(void);
 void gc_free(GC *gc);
 
-LispNode *gc_alloc_node(GC *gc, LISP_NODE_KIND kind);
+LispNode *gc_alloc_node(GC *gc, LispNodeKind kind);
 
 Scope *gc_alloc_scope(GC *gc, Scope *parent);
 void gc_free_scope(GC *gc, Scope *scope);

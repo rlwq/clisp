@@ -13,7 +13,7 @@ typedef struct {
     size_t size;
 } StringView;
 
-typedef DA(StringView) SV_DA;
+typedef DA(StringView) StringViewDA;
 
 #define SV_FMT "%.*s"
 #define SV_ARGS(sv_) ((int) (sv_).size), (sv_).data
@@ -25,9 +25,6 @@ typedef DA(StringView) SV_DA;
 #define sv_eq(sv1_, sv2_) ( (sv1_).size == (sv2_).size && !memcmp((sv1_).data, (sv2_).data, (sv1_).size) )
 
 #define sv_is_empty(sv_) ((sv_).size == 0)
-
-// TODO: review this macro
-#define sv_dup(sv_) ( (StringView) { .data = strndup((sv_).data, (sv_).size), .size = (sv_).size } )
 
 StringView sv_drop(StringView sv, size_t size);
 StringView sv_take(StringView sv, size_t size);

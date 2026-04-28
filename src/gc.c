@@ -1,14 +1,13 @@
-#include "gc.h"
-#include "dynamic_array.h"
-#include "lisp_node.h"
-#include "scope.h"
-#include "typedefs.h"
-
 #include <assert.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "gc.h"
+#include "dynamic_array.h"
+#include "lisp_node.h"
+#include "scope.h"
+#include "forwards.h"
 
 GC *gc_alloc(void) {
     GC *gc = malloc(sizeof(GC));
@@ -40,7 +39,7 @@ void gc_free(GC *gc) {
 }
 
 // TODO: split allocation/deallocation logic with construction/deconstruction logic
-LispNode *gc_alloc_node(GC *gc, LISP_NODE_KIND kind) {
+LispNode *gc_alloc_node(GC *gc, LispNodeKind kind) {
     LispNode *node = malloc(sizeof(LispNode));
     assert(node); //TODO: add some error reporting
     
@@ -176,3 +175,4 @@ void gc_mark_scope(Scope *scope) {
     if (scope->parent)
         gc_mark_scope(scope->parent);
 }
+

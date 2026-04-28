@@ -5,7 +5,6 @@
 
 #include "gc.h"
 #include "dynamic_array.h"
-#include "scope.h"
 #include "string_view.h"
 #include "lexer.h"
 #include "parser.h"
@@ -57,7 +56,6 @@ char *read_file(const char *path) {
     return src;
 }
 
-// TODO: make a typedefs.h file
 int main(int argc, char** argv) {
     if (argc != 2) {
         printf("USAGE: %s source.rkl\n", argv[0]);

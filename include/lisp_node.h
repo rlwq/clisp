@@ -1,10 +1,11 @@
 #ifndef LISP_NODE_H
 #define LISP_NODE_H
 
-#include "string_view.h"
-#include "typedefs.h"
 #include <stdbool.h>
 #include <stddef.h>
+
+#include "forwards.h"
+#include "string_view.h"
 
 typedef enum {
     LISP_NIL,
@@ -14,23 +15,23 @@ typedef enum {
     LISP_STRING,
     LISP_BUILTIN,
     LISP_LAMBDA,
-} LISP_NODE_KIND;
+} LispNodeKind;
 
 typedef struct {
     LispNode *car;
     LispNode *cdr;
-} ConsNode;
+} LispConsNode;
 
 typedef struct {
-    SV_DA args; 
+    StringViewDA args; 
     LispNode *expr;
     Scope *scope;
-} LambdaNode;
+} LispLambdaNode;
 
 typedef LispNode *(*LispBuiltin) (LispNode *args, GC *gc);
 
 struct LispNode {
-    LISP_NODE_KIND kind;
+    LispNodeKind kind;
     bool marked;
 
     LispNode *heap_next;
@@ -39,8 +40,8 @@ struct LispNode {
         StringView symbol;
         StringView string;
         LispBuiltin builtin;
-        LambdaNode lambda;
-        ConsNode cons;
+        LispLambdaNode lambda;
+        LispConsNode cons;
         int integer;
     } as;
 };

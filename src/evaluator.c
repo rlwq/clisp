@@ -8,7 +8,7 @@
 #include "dynamic_array.h"
 #include "lisp_node.h"
 #include "string_view.h"
-#include "typedefs.h"
+#include "forwards.h"
 #include "utils.h"
 
 #define CURR(e_) (*((e_)->stmts))
@@ -124,7 +124,7 @@ LispNode *eval_if_form(LispNode *condition, LispNode *if_true, LispNode *if_fals
     return eval_expr(if_true, evaluator);
 }
 
-LispNode *eval_lambda_form(SV_DA args, LispNode *subexpr, Evaluator *evaluator) {
+LispNode *eval_lambda_form(StringViewDA args, LispNode *subexpr, Evaluator *evaluator) {
     LispNode *lambda_result = gc_alloc_node(evaluator->gc, LISP_LAMBDA);
 
     lambda_result->as.lambda.args = args;
@@ -180,7 +180,7 @@ LispNode *dispatch_special_form(LispNode *head, LispNode *args, Evaluator *evalu
         LispNode *lambda_args_list = CAR(args);
         LispNode *lambda_subexpr = CAR(CDR(args));
 
-        SV_DA lambda_args;
+        StringViewDA lambda_args;
         da_init(lambda_args);
 
         for (; lambda_args_list->kind != LISP_NIL;
@@ -240,7 +240,7 @@ LispNode *eval_expr(LispNode *expr, Evaluator *evaluator) {
         case LISP_SYMBOL:
             if (sv_eq(expr->as.symbol, sv_mk("NIL")))
                 return gc_alloc_node(evaluator->gc, LISP_NIL);
-            return scope_get(CURR_SCOPE(evaluator), expr);
+            return scope_get(CURR_SCOPE(evaluator), expr->as.symbol);
         break;
 
         case LISP_CONS:

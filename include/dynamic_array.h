@@ -7,7 +7,6 @@
 #define DA_INIT_CAPACITY 64
 #define DA(T_) struct { T_ *data; size_t size; size_t capacity; }
 
-//TODO: maybe change allocation function
 #define da_init(da_)                                                      \
     do {                                                                  \
         (da_).capacity = DA_INIT_CAPACITY;                                \
@@ -35,7 +34,6 @@
     } while (0)
 
 
-//TODO: add bounds cheking
 #define da_at(da_, i_) ((da_).data[i_])
 
 #define da_nullify(da_)      \

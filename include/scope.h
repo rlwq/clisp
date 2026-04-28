@@ -1,9 +1,9 @@
 #ifndef SCOPE_H
 #define SCOPE_H
 
-#include "lisp_node.h"
-
-typedef struct Scope Scope;
+#include "forwards.h"
+#include "string_view.h"
+#include "stdbool.h"
 
 struct Scope {
     Scope *parent;
@@ -16,6 +16,6 @@ struct Scope {
 };
 
 void scope_define(Scope *scope, StringView name, LispNode *value);
-LispNode *scope_get(Scope *scope, LispNode *expr);
+LispNode *scope_get(Scope *scope, StringView name);
 
 #endif

@@ -4,8 +4,8 @@
 #include <assert.h>
 #include <stddef.h>
 
+#include "forwards.h"
 #include "lexer.h"
-#include "lisp_node.h"
 
 #define PARSER_DONE(p_) ((p_)->tokens_count == 0)
 #define PARSER_VALID(p_) (!PARSER_DONE(p_) && !(p_)->is_err)

@@ -3,7 +3,7 @@
 
 #include "lisp_node.h"
 #include "string_view.h"
-#include "typedefs.h"
+#include "forwards.h"
 
 #define EVALUATOR_DONE(e_) ((e_)->stmts_count == 0)
 #define EVALUATOR_VALID(e_) (!EVALUATOR_DONE(e_) && !(e_)->is_err)
@@ -27,7 +27,6 @@ typedef struct {
 Evaluator *evaluator_alloc(LispNodePtrDA exprs, GC *gc);
 void evaluator_free(Evaluator *evaluator);
 
-// TODO: Should maybe bind to a Symbol or smth like that
 void register_builtin(Evaluator *evaluator, StringView name, LispBuiltin func_ptr);
 
 void eval_current(Evaluator *evaluator);

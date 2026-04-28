@@ -8,7 +8,7 @@
 
 #define CURR(l_) (sv_head((l_)->src))
 #define VALID(l_) (!(l_)->is_err && !(l_)->is_eof)
-#define EMMIT_TOKEN(l_, k_) ((Token) { .kind = (k_), .src = sv(NULL, 0), .line = (l_)->line, .column = (l_)->column })
+#define EMIT_TOKEN(l_, k_) ((Token) { .kind = (k_), .src = sv(NULL, 0), .line = (l_)->line, .column = (l_)->column })
 
 Lexer *lexer_alloc(StringView src) {
     Lexer *lexer = malloc(sizeof(Lexer));
@@ -53,7 +53,7 @@ Token lex_char_token(Lexer *lexer, TokenKind kind) {
 
     StringView src = sv_take(lexer->src, 1);
     lexer_advance(lexer);
-    Token result = EMMIT_TOKEN(lexer, kind);
+    Token result = EMIT_TOKEN(lexer, kind);
     result.src = src;
 
     return result;
@@ -72,7 +72,7 @@ void lexer_skip_ws(Lexer *lexer) {
 Token lex_integer(Lexer *lexer) {
     assert(VALID(lexer));
 
-    Token result = EMMIT_TOKEN(lexer, TK_INTEGER); 
+    Token result = EMIT_TOKEN(lexer, TK_INTEGER); 
     
     StringView src = lexer->src;
     size_t size = 0;
@@ -93,7 +93,7 @@ Token lex_integer(Lexer *lexer) {
 Token lex_symbol(Lexer *lexer) { 
     assert(VALID(lexer));
 
-    Token result = EMMIT_TOKEN(lexer, TK_SYMBOL); 
+    Token result = EMIT_TOKEN(lexer, TK_SYMBOL); 
      
     StringView src = lexer->src;
     size_t size = 0;
@@ -112,7 +112,7 @@ Token lex_token(Lexer *lexer) {
     lexer_skip_ws(lexer);
     
     if (lexer->is_eof)
-        return EMMIT_TOKEN(lexer, TK_EOF);
+        return EMIT_TOKEN(lexer, TK_EOF);
 
     char curr = sv_head(lexer->src);
     char next = sv_next(lexer->src);
@@ -130,7 +130,7 @@ Token lex_token(Lexer *lexer) {
         return lex_symbol(lexer);
 
     lexer->is_err = true;
-    return EMMIT_TOKEN(lexer, TK_ERR);
+    return EMIT_TOKEN(lexer, TK_ERR);
 }
 
 void lex_current(Lexer *lexer) {
