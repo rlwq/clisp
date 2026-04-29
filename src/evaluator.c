@@ -25,6 +25,7 @@ Evaluator *evaluator_alloc(LispNodePtrDA exprs, GC *gc) {
 
     da_init(evaluator->results);
     da_init(evaluator->scope_stack);
+    da_init(evaluator->value_stack);
 
     return evaluator;
 }
@@ -35,12 +36,33 @@ void evaluator_free(Evaluator *evaluator) {
     free(evaluator);
 }
 
-void push_scope(Evaluator *evaluator, Scope *scope) {
+void evaluator_push_scope(Evaluator *evaluator, Scope *scope) {
     da_push(evaluator->scope_stack, scope);
 }
 
-void pop_scope(Evaluator *evaluator) {
+void evaluator_pop_scope(Evaluator *evaluator) {
+    assert(evaluator->scope_stack.size);
     da_pop(evaluator->scope_stack);
+}
+
+// 0 -> 1
+void evaluator_push_value(Evaluator *evaluator, LispNode *value) {
+    da_push(evaluator->value_stack, value);
+}
+
+// 1 -> 0
+LispNode *evaluator_pop_value(Evaluator *evaluator) {
+    assert(evaluator->value_stack.size);
+
+    LispNode *curr = da_at(evaluator->value_stack, evaluator->value_stack.size-1);
+    da_pop(evaluator->value_stack);
+    return curr;
+}
+
+LispNode *evaluator_peek_value(Evaluator *evaluator) {
+    assert(evaluator->value_stack.size);
+
+    return da_at(evaluator->value_stack, evaluator->value_stack.size-1);
 }
 
 void evaluator_mark(Evaluator *evaluator) {
@@ -55,6 +77,10 @@ void evaluator_mark(Evaluator *evaluator) {
     // Marking scopes
     for (size_t i = 0; i < evaluator->scope_stack.size; i++)
         gc_mark_scope(da_at(evaluator->scope_stack, i));
+
+    // Marking value stack
+    for (size_t i = 0; i < evaluator->value_stack.size; i++)
+        gc_mark_node(da_at(evaluator->value_stack, i));
 }
 
 LispNode *evaluator_advance(Evaluator *evaluator) {
@@ -66,28 +92,26 @@ LispNode *evaluator_advance(Evaluator *evaluator) {
     return curr;
 }
 
-LispNode *eval_expr(LispNode *expr, Evaluator *evaluator);
+void eval_expr(LispNode *expr, Evaluator *evaluator);
 
-LispNode *eval_list(LispNode *expr, Evaluator *evaluator) {
+size_t eval_list(LispNode *expr, Evaluator *evaluator) {
     assert(expr->kind == LISP_NIL || expr->kind == LISP_CONS);
-
-    // TODO: make an iterative approach
-    if (expr->kind == LISP_NIL) return expr;
-    if (expr->kind == LISP_CONS) {
-        LispNode *node = gc_alloc_node(evaluator->gc, LISP_CONS);
-        node->as.cons.car = eval_expr(expr->as.cons.car, evaluator);
-        node->as.cons.cdr = eval_list(expr->as.cons.cdr, evaluator);
-        return node;
+    
+    size_t size = 0;
+    for (LispNode *curr = expr; curr->kind != LISP_NIL; curr = CDR(curr)) {
+        assert(curr->kind == LISP_CONS);
+        eval_expr(CAR(curr), evaluator);
+        size++;
     }
-
-    UNREACHABLE();
+    return size;
 }
 
 void eval_current(Evaluator *evaluator) {
     assert(EVALUATOR_VALID(evaluator));
     
     LispNode *stmt = evaluator_advance(evaluator);
-    LispNode *node = eval_expr(stmt, evaluator);
+    eval_expr(stmt, evaluator);
+    LispNode *node = evaluator_pop_value(evaluator);
 
     if (node) da_push(evaluator->results, node);
 }
@@ -110,48 +134,47 @@ void eval_all(Evaluator *evaluator) {
     }
 }
 
-LispNode *eval_let_form(LispNode *symbol, LispNode *expr, Evaluator *evaluator) {
+void eval_let_form(LispNode *symbol, LispNode *expr, Evaluator *evaluator) {
     assert(symbol->kind == LISP_SYMBOL);
-    LispNode *node = eval_expr(expr, evaluator);
-    scope_define(CURR_SCOPE(evaluator), symbol->as.symbol, node);
-    return node;
+    eval_expr(expr, evaluator);
+
+    scope_define(CURR_SCOPE(evaluator), symbol->as.symbol, evaluator_peek_value(evaluator));
 }
 
-LispNode *eval_if_form(LispNode *condition, LispNode *if_true, LispNode *if_false, Evaluator *evaluator) {
-    LispNode *expr_result = eval_expr(condition, evaluator);
-    if (expr_result->kind == LISP_NIL)
-        return eval_expr(if_false, evaluator); 
-    return eval_expr(if_true, evaluator);
+void eval_if_form(LispNode *condition, LispNode *if_true, LispNode *if_false, Evaluator *evaluator) {
+    eval_expr(condition, evaluator);
+    if (evaluator_pop_value(evaluator)->kind == LISP_NIL) {
+        eval_expr(if_false, evaluator); 
+        return;
+    }
+    eval_expr(if_true, evaluator);
 }
 
-LispNode *eval_lambda_form(StringViewDA args, LispNode *subexpr, Evaluator *evaluator) {
+void eval_lambda_form(StringViewDA args, LispNode *subexpr, Evaluator *evaluator) {
     LispNode *lambda_result = gc_alloc_node(evaluator->gc, LISP_LAMBDA);
 
     lambda_result->as.lambda.args = args;
     lambda_result->as.lambda.expr = subexpr;
     lambda_result->as.lambda.scope = CURR_SCOPE(evaluator);
 
-    return lambda_result;
+    evaluator_push_value(evaluator, lambda_result);
 }
 
-LispNode *eval_lambda_call(LispNode *lambda, LispNode *args, Evaluator *evaluator) {
-    push_scope(evaluator, lambda->as.lambda.scope);
-    push_scope(evaluator, gc_alloc_scope(evaluator->gc, CURR_SCOPE(evaluator)));
+void eval_lambda_call(LispNode *lambda, Evaluator *evaluator) {
+    evaluator_push_scope(evaluator, lambda->as.lambda.scope);
+    evaluator_push_scope(evaluator, gc_alloc_scope(evaluator->gc, CURR_SCOPE(evaluator)));
 
-    for (size_t i = 0; args->kind != LISP_NIL; args = args->as.cons.cdr) {
-        scope_define(CURR_SCOPE(evaluator), da_at(lambda->as.lambda.args, i),
-                   args->as.cons.car);
-        i++;
-    }
+    for (size_t i = 0; i < lambda->as.lambda.args.size; i++)
+        scope_define(CURR_SCOPE(evaluator), da_at(lambda->as.lambda.args, lambda->as.lambda.args.size - i - 1),
+                   evaluator_pop_value(evaluator));
 
-    LispNode *result = eval_expr(lambda->as.lambda.expr, evaluator);
-    pop_scope(evaluator);
-    pop_scope(evaluator);
-    return result;
+    eval_expr(lambda->as.lambda.expr, evaluator);
+    evaluator_pop_scope(evaluator);
+    evaluator_pop_scope(evaluator);
 }
 
-LispNode *dispatch_special_form(LispNode *head, LispNode *args, Evaluator *evaluator) {
-    if (head->kind != LISP_SYMBOL) return NULL;
+bool dispatch_special_form(LispNode *head, LispNode *args, Evaluator *evaluator) {
+    if (head->kind != LISP_SYMBOL) return false;
 
     if (sv_eq(head->as.symbol, sv_mk("if"))) {
         //TODO: make proper assertions
@@ -159,7 +182,8 @@ LispNode *dispatch_special_form(LispNode *head, LispNode *args, Evaluator *evalu
         LispNode *if_true = CAR(CDR(args));
         LispNode *if_false = CAR(CDR(CDR(args)));
 
-        return eval_if_form(condition, if_true, if_false, evaluator);
+        eval_if_form(condition, if_true, if_false, evaluator);
+        return true;
     }
 
     if (sv_eq(head->as.symbol, sv_mk("let"))) {
@@ -172,7 +196,8 @@ LispNode *dispatch_special_form(LispNode *head, LispNode *args, Evaluator *evalu
         assert(value_cons->kind == LISP_CONS);
         assert(value_cons->as.cons.cdr->kind == LISP_NIL);
 
-        return eval_let_form(symbol, value_cons->as.cons.car, evaluator);
+        eval_let_form(symbol, value_cons->as.cons.car, evaluator);
+        return true;
     }
 
     if (sv_eq(head->as.symbol, sv_mk("lambda"))) {
@@ -186,33 +211,37 @@ LispNode *dispatch_special_form(LispNode *head, LispNode *args, Evaluator *evalu
         for (; lambda_args_list->kind != LISP_NIL;
                lambda_args_list = lambda_args_list->as.cons.cdr)
             da_push(lambda_args, CAR(lambda_args_list)->as.symbol);
-        LispNode *result = eval_lambda_form(lambda_args, lambda_subexpr, evaluator);
-        return result;
+        eval_lambda_form(lambda_args, lambda_subexpr, evaluator);
+        return true;
     }
-
-    return NULL;
+    
+    return false;
 }
 
-LispNode *eval_cons(LispNode *expr, Evaluator *evaluator) {
+void eval_cons(LispNode *expr, Evaluator *evaluator) {
     assert(expr->kind == LISP_CONS);
 
     LispNode *head = expr->as.cons.car; 
     LispNode *args = expr->as.cons.cdr; 
 
-    LispNode *special_form = dispatch_special_form(head, args, evaluator);
+    bool is_special_form = dispatch_special_form(head, args, evaluator);
 
-    if (special_form) return special_form;
+    if (is_special_form) return;
 
-    LispNode *evaluated_head = eval_expr(head, evaluator);
-    LispNode *evaluated_args = eval_list(args, evaluator);
+    eval_expr(head, evaluator);
+    LispNode *evaluated_head = evaluator_pop_value(evaluator);
+
+    size_t args_count = eval_list(args, evaluator);
 
     switch (evaluated_head->kind) {
         case LISP_LAMBDA:
-            return eval_lambda_call(evaluated_head, evaluated_args, evaluator);
+            eval_lambda_call(evaluated_head, evaluator);
+            return;
         break;
 
         case LISP_BUILTIN:
-            return evaluated_head->as.builtin(evaluated_args, evaluator->gc);
+            evaluated_head->as.builtin(args_count, evaluator);
+            return;
         break;
 
         case LISP_CONS:
@@ -227,24 +256,27 @@ LispNode *eval_cons(LispNode *expr, Evaluator *evaluator) {
     UNREACHABLE();
 }
 
-LispNode *eval_expr(LispNode *expr, Evaluator *evaluator) {
+void eval_expr(LispNode *expr, Evaluator *evaluator) {
     switch (expr->kind) {
         case LISP_NIL:
         case LISP_INTEGER:
         case LISP_STRING:
         case LISP_BUILTIN:
         case LISP_LAMBDA:
-            return expr;
+            evaluator_push_value(evaluator, expr);
+            return;
         break;
 
         case LISP_SYMBOL:
             if (sv_eq(expr->as.symbol, sv_mk("NIL")))
-                return gc_alloc_node(evaluator->gc, LISP_NIL);
-            return scope_get(CURR_SCOPE(evaluator), expr->as.symbol);
+                evaluator_push_value(evaluator, gc_alloc_node(evaluator->gc, LISP_NIL));
+            else evaluator_push_value(evaluator, scope_get(CURR_SCOPE(evaluator), expr->as.symbol));
+            return;
         break;
 
         case LISP_CONS:
-            return eval_cons(expr, evaluator);
+            eval_cons(expr, evaluator);
+            return;
         break;
     }
     

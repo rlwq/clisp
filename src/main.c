@@ -12,30 +12,44 @@
 #include "evaluator.h"
 #include "debug.h"
 
-LispNode *lisp_int_eq(LispNode *args, GC *gc) {
-    if (CAR(args)->as.integer == CAR(CDR(args))->as.integer) {
-        LispNode *node = gc_alloc_node(gc, LISP_INTEGER);
+void lisp_int_eq(size_t args_count, Evaluator *evaluator) {
+    assert(args_count == 2);
+    LispNode *value2 = evaluator_pop_value(evaluator);
+    LispNode *value1 = evaluator_pop_value(evaluator);
+
+    if (value1->as.integer == value2->as.integer) {
+        LispNode *node = gc_alloc_node(evaluator->gc, LISP_INTEGER);
         node->as.integer = 1;
-        return node;
+
+        evaluator_push_value(evaluator, node);
+        return;
     }
-    return gc_alloc_node(gc, LISP_NIL);
+
+    evaluator_push_value(evaluator, gc_alloc_node(evaluator->gc, LISP_NIL));
 }
 
-LispNode *lisp_sub(LispNode *args, GC *gc) {
-    LispNode *node = gc_alloc_node(gc, LISP_INTEGER);
-    node->as.integer = CAR(args)->as.integer - CAR(CDR(args))->as.integer;
-    return node;
+void lisp_sub(size_t args_count, Evaluator *evaluator) {
+    assert(args_count == 2);
+    LispNode *value2 = evaluator_pop_value(evaluator);
+    LispNode *value1 = evaluator_pop_value(evaluator);
+    
+    LispNode *node = gc_alloc_node(evaluator->gc, LISP_INTEGER);
+    node->as.integer = value1->as.integer - value2->as.integer;
+    
+    evaluator_push_value(evaluator, node);
 }
 
-LispNode *lisp_add(LispNode *args, GC *gc) {
+void lisp_add(size_t args_count, Evaluator *evaluator) {
     int result_value = 0;
 
-    for (; args->kind != LISP_NIL; args = args->as.cons.cdr)
-        result_value += args->as.cons.car->as.integer;
-
-    LispNode *node = gc_alloc_node(gc, LISP_INTEGER);
-    node->as.integer = result_value;
-    return node;
+    for (size_t i = 0; i < args_count; i++) {
+        LispNode *popped = evaluator_pop_value(evaluator);
+        result_value += popped->as.integer;
+    }
+    
+    LispNode *result = gc_alloc_node(evaluator->gc, LISP_INTEGER);
+    result->as.integer = result_value;
+    evaluator_push_value(evaluator, result);
 }
 
 char *read_file(const char *path) {
@@ -98,8 +112,8 @@ int main(int argc, char** argv) {
 
     Evaluator *evaluator = evaluator_alloc(exprs, gc);
 
-    push_scope(evaluator, gc_alloc_scope(gc, NULL));
-
+    evaluator_push_scope(evaluator, gc_alloc_scope(gc, NULL));
+    //
     register_builtin(evaluator, sv_mk("+"), lisp_add);
     register_builtin(evaluator, sv_mk("-"), lisp_sub);
     register_builtin(evaluator, sv_mk("="), lisp_int_eq);

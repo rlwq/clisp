@@ -10,19 +10,19 @@
 
 #define CURR_SCOPE(e_) (da_at((e_)->scope_stack, (e_)->scope_stack.size-1))
 
-typedef struct {
+struct Evaluator {
     LispNode **stmts;
     size_t stmts_count;
 
     LispNodePtrDA results;
     
-    // TODO: maybe reimplement as an Linked List
     DA(Scope *) scope_stack;
+    DA(LispNode *) value_stack;
 
     GC *gc;
 
     bool is_err;
-} Evaluator;
+};
 
 Evaluator *evaluator_alloc(LispNodePtrDA exprs, GC *gc);
 void evaluator_free(Evaluator *evaluator);
@@ -32,8 +32,12 @@ void register_builtin(Evaluator *evaluator, StringView name, LispBuiltin func_pt
 void eval_current(Evaluator *evaluator);
 void eval_all(Evaluator *evaluator);
 
-void push_scope(Evaluator *evaluator, Scope *scope);
-void pop_scope(Evaluator *evaluator);
+void evaluator_push_scope(Evaluator *evaluator, Scope *scope);
+void evaluator_pop_scope(Evaluator *evaluator);
+
+void evaluator_push_value(Evaluator *evaluator, LispNode *value);
+LispNode *evaluator_pop_value(Evaluator *evaluator);
+LispNode *evaluator_peek_value(Evaluator *evaluator);
 
 LispNodePtrDA extract_results(Evaluator *evaluator);
 

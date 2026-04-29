@@ -3,6 +3,7 @@
 
 #include "dynamic_array.h"
 
+typedef struct Evaluator Evaluator;
 typedef struct GC GC;
 typedef struct LispNode LispNode;
 typedef DA(struct LispNode *) LispNodePtrDA;
