@@ -39,6 +39,16 @@ void lisp_sub(size_t args_count, VM *vm) {
     vm_push_value(vm, node);
 }
 
+void lisp_print(size_t args_count, VM *vm) {
+    for (; args_count > 0; args_count--) {
+        LispNode *expr = vm_pop_value(vm);
+        print_expr(expr);
+        printf("\n");
+    }
+    vm_push_value(vm, gc_alloc_node(vm->gc, LISP_NIL));
+}
+
+
 void lisp_add(size_t args_count, VM *vm) {
     int result_value = 0;
 
@@ -113,35 +123,14 @@ int main(int argc, char** argv) {
     VM *vm = vm_alloc(exprs, gc);
 
     vm_push_scope(vm, gc_alloc_scope(gc, NULL));
-    //
     vm_register_builtin(vm, sv_mk("+"), lisp_add);
     vm_register_builtin(vm, sv_mk("-"), lisp_sub);
     vm_register_builtin(vm, sv_mk("="), lisp_int_eq);
+    vm_register_builtin(vm, sv_mk("print"), lisp_print);
     eval_all(vm);
 
-    //TODO: maybe should be an iterative approach
-
-    LispNodePtrDA results = extract_results(vm);
-
-    for (size_t i = 0; i < results.size; i++) {
-        print_expr(da_at(results, i));
-        printf("\n");
-    }
-    //
-    // for (Scope *scope = gc->scopes_heap; scope != NULL; scope = scope->heap_next) {
-    //     printf("SCOPE %zu\n", (unsigned long) scope);
-    //     printf("PAREN %zu\n", (unsigned long) scope->parent);
-    //     for (size_t i = 0; i < scope->symbols.size; i++) {
-    //         printf(SV_FMT" = ", SV_ARGS(da_at(scope->symbols, i)));
-    //         print_expr(da_at(scope->values, i));
-    //         printf("\n");
-    //     }
-    //     printf("===========\n");
-    // }
-    
     vm_free(vm);
     da_free(exprs);
-    da_free(results);
 
     parser_free(parser);
     da_free(tokens);

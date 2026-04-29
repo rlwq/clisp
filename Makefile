@@ -8,6 +8,9 @@ SRC := $(wildcard ./src/*.c)
 HEADERS := $(wildcard ./include/*.h)
 TARGET := ./build/sparkle
 
+TESTER := ./tests/tester.py
+TESTS_FOLDER := ./tests/cases/
+
 debug: $(SRC) $(HEADERS)
 	@mkdir -p ./build/
 	$(CC) $(CFLAGS) $(SRC) $(DEBUG_FLAGS) -o $(TARGET)
@@ -21,5 +24,8 @@ run: $(TARGET)
 
 clean:
 	rm -rf ./build *.plist
+
+test:
+	python $(TESTER) $(TARGET) $(TESTS_FOLDER)
 
 .PHONY: build debug run clean

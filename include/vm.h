@@ -9,13 +9,12 @@
 #define VM_VALID(e_) (!VM_DONE(e_) && !(e_)->is_err)
 
 #define CURR_SCOPE(e_) (da_at((e_)->scope_stack, (e_)->scope_stack.size-1))
+#define CURR_VALUE(e_) (da_at((e_)->value_stack, (e_)->value_stack.size-1))
 
 struct VM {
     LispNode **stmts;
     size_t stmts_count;
 
-    LispNodePtrDA results;
-    
     DA(Scope *) scope_stack;
     DA(LispNode *) value_stack;
 
@@ -36,10 +35,9 @@ void vm_push_scope(VM *vm, Scope *scope);
 void vm_pop_scope(VM *vm);
 
 void vm_push_value(VM *vm, LispNode *value);
+void vm_swap_value(VM *vm);
 LispNode *vm_pop_value(VM *vm);
 LispNode *vm_peek_value(VM *vm);
-
-LispNodePtrDA extract_results(VM *vm);
 
 void vm_mark(VM *vm);
 

@@ -23,7 +23,6 @@ VM *vm_alloc(LispNodePtrDA exprs, GC *gc) {
 
     vm->gc = gc;
 
-    da_init(vm->results);
     da_init(vm->scope_stack);
     da_init(vm->value_stack);
 
@@ -71,10 +70,6 @@ void vm_mark(VM *vm) {
     for (size_t i = 0; i < vm->stmts_count; i++)
         gc_mark_node(vm->stmts[i]);
 
-    // Marking results
-    for (size_t i = 0; i < vm->results.size; i++)
-        gc_mark_node(da_at(vm->results, i));
-
     // Marking scopes
     for (size_t i = 0; i < vm->scope_stack.size; i++)
         gc_mark_scope(da_at(vm->scope_stack, i));
@@ -112,9 +107,7 @@ void eval_current(VM *vm) {
     
     LispNode *stmt = vm_advance(vm);
     eval_expr(stmt, vm);
-    LispNode *node = vm_pop_value(vm);
-
-    if (node) da_push(vm->results, node);
+    vm_pop_value(vm);
 }
 
 void vm_register_builtin(VM *vm, StringView name, LispBuiltin func_ptr) {
@@ -282,11 +275,5 @@ void eval_expr(LispNode *expr, VM *vm) {
     }
     
     UNREACHABLE();
-}
-
-LispNodePtrDA extract_results(VM *vm) {
-    LispNodePtrDA results = vm->results;
-    da_nullify(vm->results);
-    return results;
 }
 
