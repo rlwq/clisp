@@ -5,6 +5,7 @@
 * [ ] `set` special form - variable mutation
 * [ ] `begin` special form - sequential expressions in one block
 * [ ] Comments - `;` to end of line
+* [ ] Proper API to register built-in functions
 * [ ] `bool` type - some kind of unified representation of True/False values
 * [ ] `'expr` - syntactic sugar for `(quote expr)`
 * [ ] Variadic lambdas - `(lambda (x . rest) ...)`

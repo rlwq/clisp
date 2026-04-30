@@ -19,15 +19,8 @@ void lisp_int_eq(VM *vm, size_t args_count) {
     int value1 = vm_peek_value(vm)->as.integer;
     vm_pop_value(vm);
 
-    if (value1 == value2) {
-        LispNode *node = gc_alloc_node(vm->gc, LISP_INTEGER);
-        node->as.integer = 1;
-
-        vm_push_value(vm, node);
-        return;
-    }
-
-    vm_push_value(vm, gc_alloc_node(vm->gc, LISP_NIL));
+    if (value1 == value2) vm_build_integer(vm, 1);
+    else vm_build_nil(vm);
 }
 
 void lisp_sub(VM *vm, size_t args_count) {
@@ -37,10 +30,7 @@ void lisp_sub(VM *vm, size_t args_count) {
     int value1 = vm_peek_value(vm)->as.integer;
     vm_pop_value(vm);
     
-    LispNode *node = gc_alloc_node(vm->gc, LISP_INTEGER);
-    node->as.integer = value1 - value2;
-    
-    vm_push_value(vm, node);
+    vm_build_integer(vm, value1 - value2);
 }
 
 void lisp_print(VM *vm, size_t args_count) {
@@ -50,7 +40,7 @@ void lisp_print(VM *vm, size_t args_count) {
         vm_pop_value(vm);
         printf("\n");
     }
-    vm_push_value(vm, gc_alloc_node(vm->gc, LISP_NIL));
+    vm_build_nil(vm);
 }
 
 void lisp_cons(VM *vm, size_t args_count) {
@@ -82,11 +72,31 @@ void lisp_add(VM *vm, size_t args_count) {
         result_value += popped->as.integer;
         vm_pop_value(vm);
     }
-    
-    LispNode *result = gc_alloc_node(vm->gc, LISP_INTEGER);
-    result->as.integer = result_value;
-    vm_push_value(vm, result);
+    vm_build_integer(vm, result_value); 
 }
+
+void lisp_gt(VM *vm, size_t args_count) {
+    assert(args_count == 2);
+    int value2 = vm_peek_value(vm)->as.integer;
+    vm_pop_value(vm);
+    int value1 = vm_peek_value(vm)->as.integer;
+    vm_pop_value(vm);
+
+    if (value1 > value2) vm_build_integer(vm, 1);
+    else vm_build_nil(vm);
+}
+
+void lisp_is_nil(VM *vm, size_t args_count) {
+    assert(args_count == 1);
+
+    bool is_nil = vm_peek_value(vm)->kind == LISP_NIL; 
+    vm_pop_value(vm);
+
+    if (is_nil) vm_build_integer(vm, 1);
+    else vm_build_nil(vm);
+}
+
+
 
 void lisp_eval(VM *vm, size_t args_count) {
     assert(args_count == 1);
@@ -157,11 +167,13 @@ int main(int argc, char** argv) {
     vm_register_builtin(vm, sv_mk("+"), lisp_add);
     vm_register_builtin(vm, sv_mk("-"), lisp_sub);
     vm_register_builtin(vm, sv_mk("="), lisp_int_eq);
+    vm_register_builtin(vm, sv_mk(">"), lisp_gt);
     vm_register_builtin(vm, sv_mk("print"), lisp_print);
     vm_register_builtin(vm, sv_mk("cons"), lisp_cons);
     vm_register_builtin(vm, sv_mk("car"), lisp_car);
     vm_register_builtin(vm, sv_mk("cdr"), lisp_cdr);
     vm_register_builtin(vm, sv_mk("eval"), lisp_eval);
+    vm_register_builtin(vm, sv_mk("nil?"), lisp_is_nil);
 
     vm_eval_all(vm);
 
