@@ -55,9 +55,7 @@ void vm_push_value(VM *vm, LispNode *value) {
 }
 
 void vm_new_value(VM *vm, LispNodeKind kind) {
-    if (vm->gc->nodes_count + vm->gc->scopes_count >= vm->gc->capacity) {
-        // TODO: Isolate logic
-        vm->gc->capacity *= 2;
+    if (gc_check_bounds(vm->gc)) {
         vm_mark(vm);
         gc_sweep(vm->gc);
     }

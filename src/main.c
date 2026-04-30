@@ -19,7 +19,7 @@ void lisp_int_eq(VM *vm, size_t args_count) {
     int value1 = vm_peek_value(vm)->as.integer;
     vm_pop_value(vm);
 
-    if (value1 == value2 ) {
+    if (value1 == value2) {
         LispNode *node = gc_alloc_node(vm->gc, LISP_INTEGER);
         node->as.integer = 1;
 

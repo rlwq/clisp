@@ -23,11 +23,10 @@ LispNode *gc_alloc_node(GC *gc, LispNodeKind kind);
 Scope *gc_alloc_scope(GC *gc, Scope *parent);
 void gc_free_scope(GC *gc, Scope *scope);
 
+bool gc_check_bounds(GC *gc);
+void gc_mark_scope(Scope *scope);
 void gc_mark_node(LispNode *expr);
 void gc_free_node(GC *gc, LispNode *expr);
-
-void gc_mark_scope(Scope *scope);
-
 void gc_sweep(GC *gc);
 
 #endif

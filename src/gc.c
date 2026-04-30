@@ -39,7 +39,13 @@ void gc_free(GC *gc) {
     free(gc);
 }
 
-// TODO: split allocation/deallocation logic with construction/deconstruction logic
+bool gc_check_bounds(GC *gc) {
+    if (gc->scopes_count + gc->nodes_count < gc->capacity)
+        return false;
+    gc->capacity *= 2;
+    return true;
+}
+
 LispNode *gc_alloc_node(GC *gc, LispNodeKind kind) {
     LispNode *node = malloc(sizeof(LispNode));
     assert(node); //TODO: add some error reporting 
