@@ -1,6 +1,6 @@
 # Sparkle
 
-Sparkle is a [Lisp](https://en.wikipedia.org/wiki/Lisp_(programming_language)) dialect designed to be intuitive and easy to use and reuse.
+Sparkle is a [Lisp](https://en.wikipedia.org/wiki/Lisp_(programming_language)) dialect designed to be intuitive and extensible.
 The **AST-walking interpreter** is written from scratch in **ISO C11**, no dependencies required.
 
 > [!WARNING]
@@ -13,7 +13,7 @@ The **AST-walking interpreter** is written from scratch in **ISO C11**, no depen
 * [**Homoiconicity**](https://en.wikipedia.org/wiki/Homoiconicity) - code is represented as data, allowing the program to manipulate and modify its own structure at runtime
 * [**First-class functions**](https://en.wikipedia.org/wiki/First-class_function) - anonymous functions and functions as objects
 * [**Lexical closures**](https://en.wikipedia.org/wiki/Closure_(computer_programming)) - functions capture their lexical environment
-* [**Mark-and-sweep GC**](https://en.wikipedia.org/wiki/Tracing_garbage_collection) - automatic memory management (in progress of integration)
+* [**Mark-and-sweep GC**](https://en.wikipedia.org/wiki/Tracing_garbage_collection) - automatic memory management 
 
 ### To be done
 
@@ -40,6 +40,40 @@ make debug
 ./build/sparkle source.rkl
 ```
 
+## Examples
+
+Sparkle provides imperative semantics for general-purpose programming
+
+```lisp
+(print "Hello, World!")  ; Hello, World!
+(print (* 12 13))        ; 156
+
+(let passwd 121213)
+(print (+ 1 passwd))     ; 121214
+```
+
+Functions are defined using the `lambda` keyword. Sparkle supports functional logic.
+
+```lisp
+(let abs (lambda (x) (if (< x 0) (neg x) x)))
+
+(print (abs 15))  ; 15
+(print (abs -3))  ; 3
+```
+
+Sparkle supports lexical closures, allowing functions to capture their defining environment.
+
+```lisp
+(let adder_factory (lambda (x) (lambda (y) (+ x y))))
+
+(let add3 (adder_factory 3))
+(let add5 (adder_factory 5))
+
+(print (add3 (add5 7)))  ; 15
+
+```
+
+
 ## Internal Design
 
 ### Memory Management
@@ -51,7 +85,7 @@ When triggered, the GC traverses all reachable objects, marks them, and then fre
 
 Sparkle uses lexical scoping with chained environments.
 Each scope stores symbol–value bindings and may reference a parent scope. 
-Variable lookup walks the scope chain outward until a matching binding is found.
+Variable resolution traverses the scope chain outward until a matching binding is found.
 Lambda functions capture the scope in which they are defined, allowing them to access variables from their enclosing environment.
 
 ## License

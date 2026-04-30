@@ -36,8 +36,6 @@ size_t sv_prefix_size(StringView sv, char c);
 
 char sv_head(StringView sv);
 char sv_next(StringView sv);
-bool sv_peek(StringView sv, char c);
-bool sv_eat(StringView *sv, char c);
 
 size_t sv_find(StringView sv, char c);
 
