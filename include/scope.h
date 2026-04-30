@@ -5,17 +5,21 @@
 #include "string_view.h"
 #include "stdbool.h"
 
+typedef struct {
+    StringView key;
+    LispNode *value;
+} ScopeItem;
+
 struct Scope {
     Scope *parent;
     
-    DA(StringView) symbols;
-    LispNodePtrDA values;
-    
+    DA(ScopeItem) items;
+
     Scope *heap_next;
     bool marked;
 };
 
-void scope_define(Scope *scope, StringView name, LispNode *value);
+bool scope_define(Scope *scope, StringView name, LispNode *value);
 LispNode *scope_get(Scope *scope, StringView name);
 
 #endif

@@ -88,6 +88,11 @@ void lisp_add(VM *vm, size_t args_count) {
     vm_push_value(vm, result);
 }
 
+void lisp_eval(VM *vm, size_t args_count) {
+    assert(args_count == 1);
+    vm_eval_expr(vm);
+}
+
 char *read_file(const char *path) {
     FILE *file = fopen(path, "rb");
     assert(file);
@@ -156,7 +161,9 @@ int main(int argc, char** argv) {
     vm_register_builtin(vm, sv_mk("cons"), lisp_cons);
     vm_register_builtin(vm, sv_mk("car"), lisp_car);
     vm_register_builtin(vm, sv_mk("cdr"), lisp_cdr);
-    eval_all(vm);
+    vm_register_builtin(vm, sv_mk("eval"), lisp_eval);
+
+    vm_eval_all(vm);
 
     vm_free(vm);
     da_free(exprs);

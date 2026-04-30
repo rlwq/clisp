@@ -85,8 +85,7 @@ Scope *gc_alloc_scope(GC *gc, Scope *parent) {
     Scope *scope = malloc(sizeof(Scope));
     assert(scope);
 
-    da_init(scope->symbols);
-    da_init(scope->values);
+    da_init(scope->items);
 
     scope->marked = false;
 
@@ -100,8 +99,7 @@ Scope *gc_alloc_scope(GC *gc, Scope *parent) {
 }
 
 void gc_free_scope(GC *gc, Scope *scope) {
-    da_free(scope->symbols);
-    da_free(scope->values);
+    da_free(scope->items);
     
     gc->scopes_count--;
     free(scope);
@@ -170,8 +168,8 @@ void gc_mark_scope(Scope *scope) {
 
     scope->marked = true;
    
-    for (size_t i = 0; i < scope->values.size; i++)
-        gc_mark_node(da_at(scope->values, i));
+    for (size_t i = 0; i < scope->items.size; i++)
+        gc_mark_node(da_at(scope->items, i).value);
 
     if (scope->parent)
         gc_mark_scope(scope->parent);
